@@ -1,2 +1,4 @@
 target/
 .settings/de.loskutov.anyedit.AnyEditTools.prefs
+/.project
+/.settings/
