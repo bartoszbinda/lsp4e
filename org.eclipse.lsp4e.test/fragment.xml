@@ -2,7 +2,7 @@
 <?eclipse version="3.4"?>
 <fragment>
    <extension
-         point="org.eclipse.lsp4e.languageServer">
+         point="org.eclipse.lsp4e.legacy.languageServer">
       <server
             class="org.eclipse.lsp4e.test.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server"
