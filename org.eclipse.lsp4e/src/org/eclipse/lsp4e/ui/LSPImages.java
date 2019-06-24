@@ -70,6 +70,7 @@ public class LSPImages {
 	public static final String IMG_SNIPPET = "IMG_SNIPPET"; //$NON-NLS-1$
 	public static final String IMG_COLOR = "IMG_COLOR"; //$NON-NLS-1$
 	public static final String IMG_REFERENCE = "IMG_REFERENCE"; //$NON-NLS-1$
+	public static final String IMG_OBJECT = "IMG_OBJECT"; //$NON-NLS-1$
 
 	public static void initalize(ImageRegistry registry) {
 		imageRegistry = registry;
@@ -100,8 +101,7 @@ public class LSPImages {
 		declareRegistryImage(IMG_COLOR, OBJECT + "color.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_REFERENCE, OBJECT + "reference.png"); //$NON-NLS-1$
 
-		declareRegistryImage(IMG_CLASS, OBJECT + "object.png"); //$NON-NLS-1$
-		declareRegistryImage(IMG_PROPERTY, OBJECT + "field.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OBJECT, OBJECT + "object.png"); //$NON-NLS-1$
 	}
 
 	private static final void declareRegistryImage(String key, String path) {
@@ -179,10 +179,8 @@ public class LSPImages {
 			return getImage(IMG_STRING);
 		case Variable:
 			return getImage(IMG_VARIABLE);
-		case Field:
-			return getImage(IMG_PROPERTY);
 		case Object:
-			return getImage(IMG_CLASS)
+			return getImage(IMG_OBJECT);
 		default:
 			// when the SymbolKind is out the cases above
 			return EMPTY_IMAGE;
