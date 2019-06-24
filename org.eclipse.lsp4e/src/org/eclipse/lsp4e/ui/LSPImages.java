@@ -99,6 +99,9 @@ public class LSPImages {
 		declareRegistryImage(IMG_SNIPPET, OBJECT + "snippet.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_COLOR, OBJECT + "color.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_REFERENCE, OBJECT + "reference.png"); //$NON-NLS-1$
+
+		declareRegistryImage(IMG_CLASS, OBJECT + "object.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_PROPERTY, OBJECT + "field.png"); //$NON-NLS-1$
 	}
 
 	private static final void declareRegistryImage(String key, String path) {
@@ -176,6 +179,10 @@ public class LSPImages {
 			return getImage(IMG_STRING);
 		case Variable:
 			return getImage(IMG_VARIABLE);
+		case Field:
+			return getImage(IMG_PROPERTY);
+		case Object:
+			return getImage(IMG_CLASS)
 		default:
 			// when the SymbolKind is out the cases above
 			return EMPTY_IMAGE;
