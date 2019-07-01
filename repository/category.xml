@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <bundle id="org.eclipse.lsp4e.legacy">
-      <category name="Language Server Support for Eclipse - legacy platforms (Photon)"/>
+   <bundle id="org.eclipse.lsp4e">
+      <category name="Language Server Support for Eclipse (legacy platforms)"/>
    </bundle>
    <bundle id="org.eclipse.lsp4e.debug">
-      <category name="Language Server Support for Eclipse"/>
+      <category name="Language Server Support for Eclipse (legacy platforms)"/>
    </bundle>
-   <bundle id="org.eclipse.lsp4e.legacy.source">
+   <bundle id="org.eclipse.lsp4e.source">
       <category name="Sources and Tests"/>
    </bundle>
    <bundle id="org.eclipse.lsp4e.test">
@@ -42,7 +42,7 @@
    <bundle id="org.eclipse.ui.genericeditor">
       <category name="deps"/>
    </bundle>
-   <category-def name="Language Server Support for Eclipse" label="Language Server Support for Eclipse IDE"/>
+   <category-def name="Language Server Support for Eclipse (legacy platforms)" label="Language Server Support for Eclipse (legacy platforms, Photon 4.8)"/>
    <category-def name="Sources and Tests" label="Sources and Tests"/>
    <category-def name="deps" label="Dependencies"/>
 </site>
