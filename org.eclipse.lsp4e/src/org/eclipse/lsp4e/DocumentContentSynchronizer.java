@@ -34,153 +34,165 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
+import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.TextDocumentSyncOptions;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
-	private final @NonNull LanguageServerWrapper languageServerWrapper;
-	private final @NonNull IDocument document;
-	private final @NonNull URI fileUri;
-	private final TextDocumentSyncKind syncKind;
+    private final @NonNull
+    LanguageServerWrapper languageServerWrapper;
+    private final @NonNull
+    IDocument document;
+    private final @NonNull
+    URI fileUri;
+    private final TextDocumentSyncKind syncKind;
 
-	private int version = 0;
-	private DidChangeTextDocumentParams changeParams;
-	private long modificationStamp;
+    private int version = 0;
+    private DidChangeTextDocumentParams changeParams;
+    private long modificationStamp;
 
-	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
-			@NonNull IDocument document,
-			TextDocumentSyncKind syncKind) {
-		this.languageServerWrapper = languageServerWrapper;
-		this.fileUri = LSPEclipseUtils.toUri(document);
-		this.modificationStamp = new File(fileUri).lastModified();
-		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
+    public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
+                                       @NonNull IDocument document,
+                                       TextDocumentSyncKind syncKind) {
+        this.languageServerWrapper = languageServerWrapper;
+        this.fileUri = LSPEclipseUtils.toUri(document);
+        this.modificationStamp = new File(fileUri).lastModified();
+        this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 
-		this.document = document;
-		// add a document buffer
-		TextDocumentItem textDocument = new TextDocumentItem();
-		textDocument.setUri(fileUri.toString());
-		textDocument.setText(document.get());
+        this.document = document;
+        // add a document buffer
+        TextDocumentItem textDocument = new TextDocumentItem();
+        textDocument.setUri(fileUri.toString());
+        textDocument.setText(document.get());
 
-		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
+        List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
 
-		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
+        String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
 
-		if (languageId == null) {
-			languageId = Path.fromPortableString(this.fileUri.getPath()).getFileExtension();
-		}
+        if (languageId == null) {
+            languageId = Path.fromPortableString(this.fileUri.getPath()).getFileExtension();
+        }
 
-		textDocument.setLanguageId(languageId);
-		textDocument.setVersion(++version);
-		languageServerWrapper.getInitializedServer()
-				.thenAcceptAsync(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
-	}
+        textDocument.setLanguageId(languageId);
+        textDocument.setVersion(++version);
+        languageServerWrapper.getInitializedServer()
+                .thenAcceptAsync(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
+    }
 
-	@Override
-	public void documentChanged(DocumentEvent event) {
-		checkEvent(event);
-		if (syncKind == TextDocumentSyncKind.Full) {
-			createChangeEvent(event);
-		}
+    @Override
+    public void documentChanged(DocumentEvent event) {
+        checkEvent(event);
+        if (syncKind == TextDocumentSyncKind.Full) {
+            createChangeEvent(event);
+        }
 
-		if (changeParams != null) {
-			final DidChangeTextDocumentParams changeParamsToSend = changeParams;
-			changeParams = null;
+        if (changeParams != null) {
+            final DidChangeTextDocumentParams changeParamsToSend = changeParams;
+            changeParams = null;
 
-			changeParamsToSend.getTextDocument().setVersion(++version);
-			languageServerWrapper.getInitializedServer()
-					.thenAcceptAsync(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
-		}
-	}
+            changeParamsToSend.getTextDocument().setVersion(++version);
+            languageServerWrapper.getInitializedServer()
+                    .thenAcceptAsync(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
+        }
+    }
 
-	@Override
-	public void documentAboutToBeChanged(DocumentEvent event) {
-		checkEvent(event);
-		if (syncKind == TextDocumentSyncKind.Incremental) {
-			// this really needs to happen before event gets actually
-			// applied, to properly compute positions
-			createChangeEvent(event);
-		}
-	}
+    @Override
+    public void documentAboutToBeChanged(DocumentEvent event) {
+        checkEvent(event);
+        if (syncKind == TextDocumentSyncKind.Incremental) {
+            // this really needs to happen before event gets actually
+            // applied, to properly compute positions
+            createChangeEvent(event);
+        }
+    }
 
-	/**
-	 * Convert Eclipse {@link DocumentEvent} to LS according {@link TextDocumentSyncKind}.
-	 * {@link TextDocumentContentChangeEventImpl}.
-	 *
-	 * @param event
-	 *            Eclipse {@link DocumentEvent}
-	 * @return true if change event is ready to be sent
-	 */
-	private boolean createChangeEvent(DocumentEvent event) {
-		changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), Collections.singletonList(new TextDocumentContentChangeEvent()));
-		changeParams.getTextDocument().setUri(fileUri.toString());
+    /**
+     * Convert Eclipse {@link DocumentEvent} to LS according {@link TextDocumentSyncKind}.
+     * {@link TextDocumentContentChangeEventImpl}.
+     *
+     * @param event Eclipse {@link DocumentEvent}
+     * @return true if change event is ready to be sent
+     */
+    private boolean createChangeEvent(DocumentEvent event) {
+        changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), Collections.singletonList(new TextDocumentContentChangeEvent()));
+        changeParams.getTextDocument().setUri(fileUri.toString());
 
-		IDocument document = event.getDocument();
-		TextDocumentContentChangeEvent changeEvent = null;
-		TextDocumentSyncKind syncKind = getTextDocumentSyncKind();
-		switch (syncKind) {
-		case None:
-			return false;
-		case Full:
-			changeParams.getContentChanges().get(0).setText(event.getDocument().get());
-			break;
-		case Incremental:
-			changeEvent = changeParams.getContentChanges().get(0);
-			String newText = event.getText();
-			int offset = event.getOffset();
-			int length = event.getLength();
-			try {
-				// try to convert the Eclipse start/end offset to LS range.
-				Range range = new Range(LSPEclipseUtils.toPosition(offset, document),
-						LSPEclipseUtils.toPosition(offset + length, document));
-				changeEvent.setRange(range);
-				changeEvent.setText(newText);
-				changeEvent.setRangeLength(length);
-			} catch (BadLocationException e) {
-				// error while conversion (should never occur)
-				// set the full document text as changes.
-				changeEvent.setText(document.get());
-			}
-			break;
-		}
-		return true;
-	}
+        IDocument document = event.getDocument();
+        TextDocumentContentChangeEvent changeEvent = null;
+        TextDocumentSyncKind syncKind = getTextDocumentSyncKind();
+        switch (syncKind) {
+            case None:
+                return false;
+            case Full:
+                changeParams.getContentChanges().get(0).setText(event.getDocument().get());
+                break;
+            case Incremental:
+                changeEvent = changeParams.getContentChanges().get(0);
+                String newText = event.getText();
+                int offset = event.getOffset();
+                int length = event.getLength();
+                try {
+                    // try to convert the Eclipse start/end offset to LS range.
+                    Range range = new Range(LSPEclipseUtils.toPosition(offset, document),
+                            LSPEclipseUtils.toPosition(offset + length, document));
+                    changeEvent.setRange(range);
+                    changeEvent.setText(newText);
+                    changeEvent.setRangeLength(length);
+                } catch (BadLocationException e) {
+                    // error while conversion (should never occur)
+                    // set the full document text as changes.
+                    changeEvent.setText(document.get());
+                }
+                break;
+        }
+        return true;
+    }
 
-	public void documentSaved(long timestamp) {
-		this.modificationStamp = timestamp;
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
-		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
-		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didSave(params));
-	}
+    public void documentSaved(long timestamp) {
+        this.modificationStamp = timestamp;
+        ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+        if (serverCapabilities != null) {
+            Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities.getTextDocumentSync();
+            if (textDocumentSync.isRight() && textDocumentSync.getRight().getSave() == null) {
+                return;
+            }
+        }
+        TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
+        DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
+        languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didSave(params));
+    }
 
-	public void documentClosed() {
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
-		DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
-	}
+    public void documentClosed() {
+        TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
+        DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
+        languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
+    }
 
-	/**
-	 * Returns the text document sync kind capabilities of the server and {@link TextDocumentSyncKind#Full} otherwise.
-	 *
-	 * @return the text document sync kind capabilities of the server and {@link TextDocumentSyncKind#Full} otherwise.
-	 */
-	private TextDocumentSyncKind getTextDocumentSyncKind() {
-		return syncKind;
-	}
+    /**
+     * Returns the text document sync kind capabilities of the server and {@link TextDocumentSyncKind#Full} otherwise.
+     *
+     * @return the text document sync kind capabilities of the server and {@link TextDocumentSyncKind#Full} otherwise.
+     */
+    private TextDocumentSyncKind getTextDocumentSyncKind() {
+        return syncKind;
+    }
 
-	protected long getModificationStamp() {
-		return modificationStamp;
-	}
+    protected long getModificationStamp() {
+        return modificationStamp;
+    }
 
-	public IDocument getDocument() {
-		return this.document;
-	}
+    public IDocument getDocument() {
+        return this.document;
+    }
 
-	int getVersion() {
-		return version;
-	}
+    int getVersion() {
+        return version;
+    }
 
-	private void checkEvent(DocumentEvent event) {
-		if (this.document != event.getDocument()) {
-			throw new IllegalStateException("Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
-		}
-	}
+    private void checkEvent(DocumentEvent event) {
+        if (this.document != event.getDocument()) {
+            throw new IllegalStateException("Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
+        }
+    }
 }

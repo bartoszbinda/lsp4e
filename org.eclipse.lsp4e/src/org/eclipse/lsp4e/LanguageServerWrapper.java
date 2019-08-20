@@ -110,6 +110,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.lsp4j.TypeDefinitionCapabilities;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -249,9 +250,14 @@ public class LanguageServerWrapper {
 			textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
 			textDocumentClientCapabilities
 					.setCompletion(new CompletionCapabilities(new CompletionItemCapabilities(Boolean.TRUE)));
-			textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities());
+			DefinitionCapabilities definitionCapabilities = new DefinitionCapabilities();
+			definitionCapabilities.setLinkSupport(Boolean.TRUE);
+			textDocumentClientCapabilities.setDefinition(definitionCapabilities);
 			textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
 			textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
+			TypeDefinitionCapabilities typeDefinitionCapabilities = new TypeDefinitionCapabilities();
+			typeDefinitionCapabilities.setLinkSupport(Boolean.TRUE);
+			textDocumentClientCapabilities.setTypeDefinition(typeDefinitionCapabilities);
 			DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities();
 			documentSymbol.setHierarchicalDocumentSymbolSupport(true);
 			documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array, SymbolKind.Boolean,

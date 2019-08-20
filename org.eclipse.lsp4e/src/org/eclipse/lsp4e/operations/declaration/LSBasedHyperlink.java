@@ -25,45 +25,49 @@ import org.eclipse.ui.PlatformUI;
 
 public class LSBasedHyperlink implements IHyperlink {
 
-	private Either<Location, LocationLink> location;
-	private IRegion highlightRegion;
+    private Either<Location, LocationLink> location;
+    private IRegion highlightRegion;
 
-	public LSBasedHyperlink(Either<Location, LocationLink> location, IRegion highlightRegion) {
-		this.location = location;
-		this.highlightRegion = highlightRegion;
-	}
 
-	public LSBasedHyperlink(Location location, IRegion linkRegion) {
-		this(Either.forLeft(location), linkRegion);
-	}
+    public LSBasedHyperlink(Either<Location, LocationLink> location, IRegion highlightRegion) {
+        this.location = location;
+        this.highlightRegion = highlightRegion;
+    }
 
-	public LSBasedHyperlink(LocationLink locationLink, IRegion linkRegion) {
-		this(Either.forRight(locationLink), linkRegion);
-	}
+    public LSBasedHyperlink(Location location, IRegion linkRegion) {
+        this(Either.forLeft(location), linkRegion);
+    }
 
-	@Override
-	public IRegion getHyperlinkRegion() {
-		return this.highlightRegion;
-	}
+    public LSBasedHyperlink(LocationLink locationLink, IRegion linkRegion) {
+        this(Either.forRight(locationLink), linkRegion);
+    }
 
-	@Override
-	public String getTypeLabel() {
-		return Messages.hyperlinkLabel;
-	}
+    @Override
+    public IRegion getHyperlinkRegion() {
+        return this.highlightRegion;
+    }
 
-	@Override
-	public String getHyperlinkText() {
-		return Messages.hyperlinkLabel;
-	}
+    @Override
+    public String getTypeLabel() {
+        return Messages.hyperlinkLabel;
+    }
 
-	@Override
-	public void open() {
-		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-		if (location.isLeft()) {
-			LSPEclipseUtils.openInEditor(location.getLeft(), page);
-		} else {
-			LSPEclipseUtils.openInEditor(location.getRight(), page);
-		}
-	}
+    @Override
+    public String getHyperlinkText() {
+        return Messages.hyperlinkLabel;
+    }
 
+    @Override
+    public void open() {
+        IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+        if (location.isLeft()) {
+            LSPEclipseUtils.openInEditor(location.getLeft(), page);
+        } else {
+            LSPEclipseUtils.openInEditor(location.getRight(), page);
+        }
+    }
+
+    public Either<Location, LocationLink> getLocation() {
+        return location;
+    }
 }

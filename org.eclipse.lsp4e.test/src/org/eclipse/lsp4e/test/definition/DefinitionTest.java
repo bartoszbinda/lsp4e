@@ -40,6 +40,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import static org.junit.Assert.assertTrue;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.eclipse.lsp4e.operations.declaration.LSBasedHyperlink;
+import org.eclipse.lsp4j.LocationLink;
+
 
 public class DefinitionTest {
 
