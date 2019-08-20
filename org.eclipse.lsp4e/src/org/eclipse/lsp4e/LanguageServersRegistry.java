@@ -106,7 +106,6 @@ public class LanguageServersRegistry {
 
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
 		private IConfigurationElement extension;
-		private StreamConnectionProvider provider;
 
 		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
 			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), Boolean.parseBoolean(element.getAttribute(SINGLETON_ATTRIBUTE)));
@@ -115,16 +114,13 @@ public class LanguageServersRegistry {
 
 		@Override
 		public StreamConnectionProvider createConnectionProvider() {
-			if (provider == null) {
-				try {
-					provider = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
-				} catch (CoreException e) {
-					StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
-					throw new RuntimeException(
-							"Exception occurred while creating an instance of the stream connection provider", e); //$NON-NLS-1$
-				}
+			try {
+				return (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
+			} catch (CoreException e) {
+				StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
+				throw new RuntimeException(
+						"Exception occurred while creating an instance of the stream connection provider", e); //$NON-NLS-1$
 			}
-			return provider;
 		}
 
 		@Override
@@ -165,7 +161,7 @@ public class LanguageServersRegistry {
 		final Set<String> launchModes;
 
 		public LaunchConfigurationLanguageServerDefinition(ILaunchConfiguration launchConfiguration,
-				Set<String> launchModes) {
+														   Set<String> launchModes) {
 			super(launchConfiguration.getName(), launchConfiguration.getName(), false);
 			this.launchConfiguration = launchConfiguration;
 			this.launchModes = launchModes;
@@ -276,19 +272,19 @@ public class LanguageServersRegistry {
 	 */
 	List<ContentTypeToLanguageServerDefinition> findProviderFor(final @NonNull IContentType contentType) {
 		return connections.stream()
-			.filter(entry -> entry.getKey().equals(contentType))
-			.sorted((mapping1, mapping2) -> {
-				// this sort should make that the content-type hierarchy is respected
-				// and the most specialized content-type are placed before the more generic ones
-				if (mapping1.getKey().isKindOf(mapping2.getKey())) {
-					return -1;
-				} else if (mapping2.getKey().isKindOf(mapping1.getKey())) {
-					return +1;
-				}
-				// TODO support "priority" attribute, but it's not made public
-				return mapping1.getKey().getId().compareTo(mapping2.getKey().getId());
-			})
-			.collect(Collectors.toList());
+				.filter(entry -> entry.getKey().equals(contentType))
+				.sorted((mapping1, mapping2) -> {
+					// this sort should make that the content-type hierarchy is respected
+					// and the most specialized content-type are placed before the more generic ones
+					if (mapping1.getKey().isKindOf(mapping2.getKey())) {
+						return -1;
+					} else if (mapping2.getKey().isKindOf(mapping1.getKey())) {
+						return +1;
+					}
+					// TODO support "priority" attribute, but it's not made public
+					return mapping1.getKey().getId().compareTo(mapping2.getKey().getId());
+				})
+				.collect(Collectors.toList());
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
@@ -299,8 +295,8 @@ public class LanguageServersRegistry {
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType,
-			@NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId,
-			EnablementTester enablement) {
+									@NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId,
+									EnablementTester enablement) {
 		if (languageId != null) {
 			serverDefinition.registerAssociation(contentType, languageId);
 		}
@@ -343,7 +339,7 @@ public class LanguageServersRegistry {
 		public final EnablementTester enablement;
 
 		public ContentTypeMapping(@NonNull IContentType contentType, @NonNull String id, @Nullable String languageId,
-				@Nullable EnablementTester enablement) {
+								  @Nullable EnablementTester enablement) {
 			this.contentType = contentType;
 			this.id = id;
 			this.languageId = languageId;

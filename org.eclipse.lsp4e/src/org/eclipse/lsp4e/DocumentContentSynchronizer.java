@@ -37,6 +37,8 @@ import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.IPath;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
@@ -69,9 +71,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
         List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
 
         String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
-
+        IPath fromPortableString = Path.fromPortableString(this.fileUri.getPath());
         if (languageId == null) {
-            languageId = Path.fromPortableString(this.fileUri.getPath()).getFileExtension();
+            languageId = fromPortableString.getFileExtension();
+            if (languageId == null) {
+                languageId = fromPortableString.lastSegment();
+            }
         }
 
         textDocument.setLanguageId(languageId);
@@ -164,9 +169,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
     }
 
     public void documentClosed() {
-        TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
-        DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-        languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
+        if (languageServerWrapper.isActive()) {
+            TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
+            DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
+            languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
+        }
     }
 
     /**
