@@ -263,4 +263,17 @@
 			<url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</url>
 		</pluginRepository>
 	</pluginRepositories>
+
+	<distributionManagement>
+        <repository>
+            <id>central</id>
+            <name>libs-release-local</name>
+            <url>http://dev.codedose.com/artifactory/libs-release-local</url>
+        </repository>
+        <snapshotRepository>
+            <id>central</id>
+            <name>libs-snapshot-local</name>
+            <url>http://dev.codedose.com/artifactory/libs-snapshot-local</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
