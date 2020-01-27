@@ -13,14 +13,12 @@
  *                               - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -68,13 +66,11 @@ import org.eclipse.swt.graphics.TextStyle;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
-
 @SuppressWarnings("restriction")
 public class LSIncompleteCompletionProposal
 		implements ICompletionProposal, ICompletionProposalExtension3, ICompletionProposalExtension4,
 		ICompletionProposalExtension5, ICompletionProposalExtension6, ICompletionProposalExtension7,
 		IContextInformation {
-
 	private static final int RESOLVE_TIMEOUT = 500;
 	// Those variables should be defined in LSP4J and reused here whenever done there
 	// See https://github.com/eclipse/lsp4j/issues/149
@@ -96,7 +92,6 @@ public class LSIncompleteCompletionProposal
 	private static final String TM_DIRECTORY = "TM_DIRECTORY"; //$NON-NLS-1$
 	/** The full file path of the current document */
 	private static final String TM_FILEPATH = "TM_FILEPATH"; //$NON-NLS-1$
-
 	private static final Styler DEPRECATE = new Styler() {
 		@Override
 		public void applyStyles(TextStyle textStyle) {
@@ -104,7 +99,6 @@ public class LSIncompleteCompletionProposal
 			textStyle.foreground = PlatformUI.getWorkbench().getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
 		};
 	};
-
 	protected final CompletionItem item;
 	private int initialOffset = -1;
 	protected int bestOffset = -1;
@@ -119,7 +113,6 @@ public class LSIncompleteCompletionProposal
 	private String documentFilter;
 	private String documentFilterAddition = ""; //$NON-NLS-1$
 	private LanguageServer languageServer;
-
 	public LSIncompleteCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
 			LanguageServer languageServer) {
 		this.item = item;
@@ -129,7 +122,6 @@ public class LSIncompleteCompletionProposal
 		this.currentOffset = offset;
 		this.bestOffset = getPrefixCompletionStart(document, offset);
 	}
-
 	/**
 	 * See {@link CompletionProposalTools.getFilterFromDocument} for filter
 	 * generation logic
@@ -149,7 +141,6 @@ public class LSIncompleteCompletionProposal
 		currentOffset = offset;
 		return getDocumentFilter();
 	}
-
 	/**
 	 * See {@link CompletionProposalTools.getFilterFromDocument} for filter
 	 * generation logic
@@ -165,7 +156,6 @@ public class LSIncompleteCompletionProposal
 		documentFilterAddition = ""; //$NON-NLS-1$
 		return documentFilter;
 	}
-
 	/**
 	 * See {@link CompletionProposalTools.getScoreOfFilterMatch} for ranking logic
 	 *
@@ -184,7 +174,6 @@ public class LSIncompleteCompletionProposal
 		}
 		return rankScore;
 	}
-
 	/**
 	 * See {@link CompletionProposalTools.getCategoryOfFilterMatch} for category
 	 * logic
@@ -205,23 +194,18 @@ public class LSIncompleteCompletionProposal
 		}
 		return rankCategory;
 	}
-
 	public int getBestOffset() {
 		return this.bestOffset;
 	}
-
 	public void updateOffset(int offset) {
 		this.bestOffset = getPrefixCompletionStart(document, offset);
 	}
-
 	public CompletionItem getItem() {
 		return this.item;
 	}
-
 	private boolean isDeprecated() {
 		return item.getDeprecated() != null && item.getDeprecated().booleanValue();
 	}
-
 	@Override
 	public StyledString getStyledDisplayString(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {
 		String rawString = getDisplayString();
@@ -239,7 +223,6 @@ public class LSIncompleteCompletionProposal
 						return res;
 					} else {
 						res.setStyle(index, 1, new Styler() {
-
 							@Override
 							public void applyStyles(TextStyle textStyle) {
 								if (isDeprecated()) {
@@ -247,7 +230,6 @@ public class LSIncompleteCompletionProposal
 								}
 								boldStylerProvider.getBoldStyler().applyStyles(textStyle);
 							}
-
 						});
 						lastIndex = index + 1;
 					}
@@ -258,12 +240,10 @@ public class LSIncompleteCompletionProposal
 		}
 		return res;
 	}
-
 	@Override
 	public String getDisplayString() {
 		return this.item.getLabel();
 	}
-
 	@Override
 	public StyledString getStyledDisplayString() {
 		if (Boolean.TRUE.equals(item.getDeprecated())) {
@@ -271,13 +251,11 @@ public class LSIncompleteCompletionProposal
 		}
 		return new StyledString(getDisplayString());
 	}
-
 	@Override
 	public boolean isAutoInsertable() {
 		// TODO consider what's best
 		return false;
 	}
-
 	@Override
 	public IInformationControlCreator getInformationControlCreator() {
 		return new AbstractReusableInformationControlCreator() {
@@ -296,7 +274,6 @@ public class LSIncompleteCompletionProposal
 			}
 		};
 	}
-
 	@Override
 	public Object getAdditionalProposalInfo(IProgressMonitor monitor) {
 		if (LanguageServiceAccessor.checkCapability(languageServer,
@@ -311,7 +288,6 @@ public class LSIncompleteCompletionProposal
 				Thread.currentThread().interrupt();
 			}
 		}
-
 		StringBuilder res = new StringBuilder();
 		if (this.item.getDetail() != null) {
 			res.append("<p>" + this.item.getDetail() + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -325,10 +301,8 @@ public class LSIncompleteCompletionProposal
 				res.append(htmlDocString);
 			}
 		}
-
 		return LSBasedHover.styleHtml(res.toString());
 	}
-
 	private void updateCompletionItem(CompletionItem resolvedItem) {
 		if (resolvedItem == null) {
 			return;
@@ -358,12 +332,10 @@ public class LSIncompleteCompletionProposal
 			item.setAdditionalTextEdits(resolvedItem.getAdditionalTextEdits());
 		}
 	}
-
 	@Override
 	public CharSequence getPrefixCompletionText(IDocument document, int completionOffset) {
 		return item.getInsertText().substring(completionOffset - this.bestOffset);
 	}
-
 	@Override
 	public int getPrefixCompletionStart(IDocument document, int completionOffset) {
 		if (this.item.getTextEdit() != null) {
@@ -389,12 +361,10 @@ public class LSIncompleteCompletionProposal
 		}
 		return completionOffset;
 	}
-
 	@Override
 	public void apply(IDocument document) {
 		apply(document, Character.MIN_VALUE, 0, this.bestOffset);
 	}
-
 	protected void apply(IDocument document, char trigger, int stateMask, int offset) {
 		String insertText = null;
 		TextEdit textEdit = item.getTextEdit();
@@ -425,7 +395,6 @@ public class LSIncompleteCompletionProposal
 					textEdit.getRange().setEnd(documentEnd);
 				}
 			}
-
 			if (insertText != null) {
 				// try to reuse existing characters after completion location
 				int shift = offset - this.bestOffset;
@@ -501,7 +470,6 @@ public class LSIncompleteCompletionProposal
 			} else {
 				LSPEclipseUtils.applyEdit(textEdit, document);
 			}
-
 			if (viewer != null && !regions.isEmpty()) {
 				LinkedModeModel model = new LinkedModeModel();
 				for (List<LinkedPosition> positions: regions.values()) {
@@ -512,7 +480,6 @@ public class LSIncompleteCompletionProposal
 					model.addGroup(group);
 				}
 				model.forceInstall();
-
 				LinkedModeUI ui = new EditorLinkedModeUI(model, viewer);
 				// ui.setSimpleMode(true);
 				// ui.setExitPolicy(new ExitPolicy(closingCharacter, document));
@@ -526,7 +493,6 @@ public class LSIncompleteCompletionProposal
 			LanguageServerPlugin.logError(ex);
 		}
 	}
-
 	private int computeNewOffset(List<TextEdit> additionalTextEdits, int insertionOffset, IDocument doc) {
 		if (additionalTextEdits != null && !additionalTextEdits.isEmpty()) {
 			int adjustment = 0;
@@ -549,7 +515,6 @@ public class LSIncompleteCompletionProposal
 		}
 		return insertionOffset;
 	}
-
 	private String getVariableValue(String variableName) {
 		switch (variableName) {
 		case TM_FILENAME_BASE:
@@ -595,7 +560,6 @@ public class LSIncompleteCompletionProposal
 			return null;
 		}
 	}
-
 	protected String getInsertText() {
 		String insertText = this.item.getInsertText();
 		if (this.item.getTextEdit() != null) {
@@ -606,7 +570,6 @@ public class LSIncompleteCompletionProposal
 		}
 		return insertText;
 	}
-
 	@Override
 	public Point getSelection(IDocument document) {
 		if (this.firstPosition != null) {
@@ -617,39 +580,32 @@ public class LSIncompleteCompletionProposal
 		}
 		return new Point(selection.getOffset(), selection.getLength());
 	}
-
 	@Override
 	public String getAdditionalProposalInfo() {
 		return this.item.getDetail();
 	}
-
 	@Override
 	public Image getImage() {
 		return LSPImages.imageFromCompletionItem(this.item);
 	}
-
 	@Override
 	public IContextInformation getContextInformation() {
 		return this;
 	}
-
 	@Override
 	public String getContextDisplayString() {
 		return getAdditionalProposalInfo();
 	}
-
 	@Override
 	public String getInformationDisplayString() {
 		return getAdditionalProposalInfo();
 	}
-
 	public String getSortText() {
 		if (item.getSortText() != null && !item.getSortText().isEmpty()) {
 			return item.getSortText();
 		}
 		return item.getLabel();
 	}
-
 	public String getFilterString() {
 		if (item.getFilterText() != null && !item.getFilterText().isEmpty()) {
 			return item.getFilterText();

@@ -9,6 +9,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 545950 - Specifying the directory in ProcessStreamConnectionProvider should not be mandatory
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 508812 - Improve error and logging handling
  *******************************************************************************/
 package org.eclipse.lsp4e.server;
 import java.io.IOException;
@@ -105,5 +106,10 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 		return Objects.equals(this.getCommands(), other.getCommands())
 				&& Objects.equals(this.getWorkingDirectory(), other.getWorkingDirectory())
 				&& Objects.equals(this.socket, other.socket);
+	}
+	@Override
+	public String toString() {
+		return "ProcessOverSocketStreamConnectionProvider [socket=" + socket + ", commands=" + this.getCommands() //$NON-NLS-1$//$NON-NLS-2$
+				+ ", workingDir=" + this.getWorkingDirectory() + "]"; //$NON-NLS-1$//$NON-NLS-2$
 	}
 }

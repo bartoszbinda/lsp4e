@@ -468,7 +468,7 @@ public class LanguageServerWrapper {
 	 *
 	 * @noreference internal so far
 	 */
-	private void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
+	public void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
 		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
 
 		IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(thePath);
