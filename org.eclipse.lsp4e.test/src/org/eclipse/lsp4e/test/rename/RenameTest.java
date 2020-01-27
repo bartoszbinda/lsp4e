@@ -10,10 +10,8 @@
  *  Mickael Istria (Red Hat Inc.) - Added some suites
  *******************************************************************************/
 package org.eclipse.lsp4e.test.rename;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -23,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -48,6 +45,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Control;
@@ -62,11 +60,8 @@ import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Rule;
 import org.junit.Test;
-
 public class RenameTest {
-
 	@Rule public AllCleanRule clear = new AllCleanRule();
-
 	@Test
 	public void testRenameHandlerEnablement() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -77,7 +72,6 @@ public class RenameTest {
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
 		assertTrue(command.isEnabled() && command.isHandled());
 	}
-
 	@Test
 	public void testRenameRefactoring() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -97,7 +91,44 @@ public class RenameTest {
 		}).join();
 		assertEquals("new", document.get());
 	}
-
+	@Test
+	public void testPrepareRenameRefactoring() throws Exception {
+		IProject project = TestUtils.createProject("testPrepareRenameRefactoring");
+		IFile file = TestUtils.createUniqueTestFile(project, "old");
+		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
+		IDocument document = LSPEclipseUtils.getDocument(file);
+		LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider).thenAccept(languageServers -> {
+			LSPRenameProcessor processor = new LSPRenameProcessor(LSPEclipseUtils.getDocument(file), languageServers.get(0), 0);
+			processor.setNewName("new");
+			try {
+				ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+				processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
+				processorBasedRefactoring.createChange(new NullProgressMonitor()).perform(new NullProgressMonitor());
+			} catch (CoreException e) {
+				e.printStackTrace();
+			}
+		}).join();
+		assertEquals("new", document.get());
+	}
+	@Test
+	public void testPrepareRenameRefactoringError() throws Exception {
+		IProject project = TestUtils.createProject("testPrepareRenameRefactoring");
+		IFile file = TestUtils.createUniqueTestFile(project, "old");
+		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
+		MockLanguageServer.INSTANCE.getTextDocumentService();
+		IDocument document = LSPEclipseUtils.getDocument(file);
+		LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider).thenAccept(languageServers -> {
+			LSPRenameProcessor processor = new LSPRenameProcessor(LSPEclipseUtils.getDocument(file), languageServers.get(0), 0);
+			processor.setNewName("new");
+			try {
+				ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+				RefactoringStatus status = processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
+				assertEquals(RefactoringStatus.FATAL, status.getSeverity());
+			} catch (CoreException e) {
+				e.printStackTrace();
+			}
+		}).join();
+	}
 	@Test
 	public void testRenameRefactoringExternalFile() throws Exception {
 		File file = File.createTempFile("testPerformOperationExternalFile", ".lspt");
@@ -125,7 +156,6 @@ public class RenameTest {
 			Files.deleteIfExists(file.toPath());
 		}
 	}
-
 	@Test
 	public void testRenameChangeAlsoExternalFile() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -155,7 +185,6 @@ public class RenameTest {
 			Files.deleteIfExists(externalFile.toPath());
 		}
 	}
-
 	@Test
 	public void testRenameHandlerExecution() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -214,7 +243,6 @@ public class RenameTest {
 			throw new Error(ex);
 		}
 	}
-
 	private static WorkspaceEdit createSimpleMockRenameEdit(URI fileUri) {
 		WorkspaceEdit res = new WorkspaceEdit();
 		File f = new File(fileUri);

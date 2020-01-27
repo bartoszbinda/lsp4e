@@ -12,11 +12,8 @@
  *  Jan Koehnlein (TypeFox) add rename empty message
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
-
 import org.eclipse.osgi.util.NLS;
-
 public class Messages extends NLS {
-
 	public static String hyperlinkLabel;
 	public static String PreferencesPage_Intro;
 	public static String PreferencesPage_staticServers;
@@ -61,6 +58,7 @@ public class Messages extends NLS {
 	public static String rename_processor_required;
 	public static String serverEdit;
 	public static String rename_empty_message;
+	public static String rename_invalidated;
 	public static String completionError;
 	public static String linkWithEditor_label;
 	public static String linkWithEditor_description;
@@ -71,7 +69,6 @@ public class Messages extends NLS {
 	public static String enableDisableLSJob;
 	public static String edit_CreateFile;
 	public static String workspaceSymbols;
-
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$
 	}

@@ -1,3 +1,4 @@
+
 /*******************************************************************************
  * Copyright (c) 2016, 2018 Red Hat Inc. and others.
  * This program and the accompanying materials are made
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -240,7 +242,7 @@ public class LanguageServerWrapper {
 			WorkspaceClientCapabilities workspaceClientCapabilities = new WorkspaceClientCapabilities();
 			workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
 			workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
-			workspaceClientCapabilities.setSymbol(new SymbolCapabilities());
+			workspaceClientCapabilities.setSymbol(new SymbolCapabilities(Boolean.TRUE));
 			workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
 			WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
 			editCapabilities.setDocumentChanges(Boolean.TRUE);
@@ -280,7 +282,7 @@ public class LanguageServerWrapper {
 					SymbolKind.Property, SymbolKind.String, SymbolKind.Struct, SymbolKind.TypeParameter,
 					SymbolKind.Variable)));
 			textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
-			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities());
+			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
 			textDocumentClientCapabilities.setHover(new HoverCapabilities());
 			textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
 			textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
@@ -299,7 +301,9 @@ public class LanguageServerWrapper {
 			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
-			}).thenRun(() -> this.languageServer.initialized(new InitializedParams()));
+			}).thenRun(() -> {
+				this.languageServer.initialized(new InitializedParams());
+			});
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRunAsync(() -> {
 				if (this.initialProject != null) {
@@ -357,24 +361,27 @@ public class LanguageServerWrapper {
 		this.dynamicRegistrations.clear();
 		final Future<?> serverFuture = this.launcherFuture;
 		final StreamConnectionProvider provider = this.lspStreamProvider;
-		Runnable stopFutureAndProvider = () -> {
+		final LanguageServer languageServerInstance = this.languageServer;
+		Runnable shutdownKillAndStopFutureAndProvider = () -> {
+			if (languageServerInstance != null) {
+				CompletableFuture<Object> shutdown = languageServerInstance.shutdown();
+				try {
+					shutdown.get(5, TimeUnit.SECONDS);
+				}
+				catch (Exception e) {
+				}
+			}
 			if (serverFuture != null) {
 				serverFuture.cancel(true);
+			}
+			if (languageServerInstance != null) {
+				languageServerInstance.exit();
 			}
 			if (provider != null) {
 				provider.stop();
 			}
 		};
-		if (this.languageServer != null) {
-			CompletableFuture<Object> shutdown = this.languageServer.shutdown();
-			shutdown.thenRun(stopFutureAndProvider);
-			shutdown.exceptionally(t -> {
-				stopFutureAndProvider.run();
-				return null;
-			});
-		} else {
-			stopFutureAndProvider.run();
-		}
+		CompletableFuture.runAsync(shutdownKillAndStopFutureAndProvider);
 		this.launcherFuture = null;
 		this.lspStreamProvider = null;
 		while (!this.connectedDocuments.isEmpty()) {
@@ -391,7 +398,10 @@ public class LanguageServerWrapper {
 		if (file != null && file.exists()) {
 			connect(file, document);
 		} else {
-			connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
+			URI uri = LSPEclipseUtils.toUri(document);
+			if (uri != null) {
+				connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
+			}
 		}
 	}
 	protected synchronized void watchProject(IProject project, boolean isInitializationRootProject) {
@@ -602,6 +612,8 @@ public class LanguageServerWrapper {
 			LanguageServerPlugin.logError("LanguageServer not initialized after 10s", e); //$NON-NLS-1$
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
+		} catch (CancellationException e) {
+			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
@@ -647,6 +659,14 @@ public class LanguageServerWrapper {
 					addRegistration(reg, () -> unregisterCommands(newCommands));
 					registerCommands(newCommands);
 				}
+			} else if ("textDocument/formatting".equals(reg.getMethod())) { //$NON-NLS-1$
+				final Boolean beforeRegistration = serverCapabilities.getDocumentFormattingProvider();
+				serverCapabilities.setDocumentFormattingProvider(Boolean.TRUE);
+				addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(beforeRegistration));
+			} else if ("textDocument/rangeFormatting".equals(reg.getMethod())) { //$NON-NLS-1$
+				final Boolean beforeRegistration = serverCapabilities.getDocumentRangeFormattingProvider();
+				serverCapabilities.setDocumentRangeFormattingProvider(Boolean.TRUE);
+				addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(beforeRegistration));
 			}
 		});
 	}
