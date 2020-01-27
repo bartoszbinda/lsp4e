@@ -11,7 +11,6 @@
  *  Miro Spoenemann (TypeFox) - added clientImpl and serverInterface attributes
  *******************************************************************************/
 package org.eclipse.lsp4e;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import org.eclipse.core.expressions.ExpressionConverter;
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -46,7 +44,6 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
-
 /**
  * This registry aims at providing a good language server connection (as {@link StreamConnectionProvider}
  * for a given input.
@@ -56,14 +53,10 @@ import org.osgi.framework.Bundle;
  *
  */
 public class LanguageServersRegistry {
-
 	private static final String CONTENT_TYPE_TO_LSP_LAUNCH_PREF_KEY = "contentTypeToLSPLauch"; //$NON-NLS-1$
-
 	private static final String EXTENSION_POINT_ID = LanguageServerPlugin.PLUGIN_ID + ".languageServer"; //$NON-NLS-1$
-
 	private static final String LS_ELEMENT = "server"; //$NON-NLS-1$
 	private static final String MAPPING_ELEMENT = "contentTypeMapping"; //$NON-NLS-1$
-
 	private static final String ID_ATTRIBUTE = "id"; //$NON-NLS-1$
 	private static final String SINGLETON_ATTRIBUTE = "singleton"; //$NON-NLS-1$
 	private static final String CONTENT_TYPE_ATTRIBUTE = "contentType"; //$NON-NLS-1$
@@ -74,45 +67,35 @@ public class LanguageServersRegistry {
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_ATTRIBUTE = "enabledWhen"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
-
 	public abstract static class LanguageServerDefinition {
 		public final @NonNull String id;
 		public final @NonNull String label;
 		public final boolean isSingleton;
 		public final @NonNull Map<IContentType, String> langugeIdMappings;
-
 		public LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton) {
 			this.id = id;
 			this.label = label;
 			this.isSingleton = isSingleton;
 			this.langugeIdMappings = new ConcurrentHashMap<>();
 		}
-
 		public void registerAssociation(@NonNull IContentType contentType, @NonNull String languageId) {
 			this.langugeIdMappings.put(contentType, languageId);
 		}
-
 		public abstract StreamConnectionProvider createConnectionProvider();
-
 		public LanguageClientImpl createLanguageClient() {
 			return new LanguageClientImpl();
 		}
-
 		public Class<? extends LanguageServer> getServerInterface() {
 			return LanguageServer.class;
 		}
-
 	}
-
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
 		private IConfigurationElement extension;
 		private StreamConnectionProvider provider;
-
 		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
 			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), Boolean.parseBoolean(element.getAttribute(SINGLETON_ATTRIBUTE)));
 			this.extension = element;
 		}
-
 		@Override
 		public StreamConnectionProvider createConnectionProvider() {
 			if (provider == null) {
@@ -126,7 +109,6 @@ public class LanguageServersRegistry {
 			}
 			return provider;
 		}
-
 		@Override
 		public LanguageClientImpl createLanguageClient() {
 			String clientImpl = extension.getAttribute(CLIENT_IMPL_ATTRIBUTE);
@@ -139,7 +121,6 @@ public class LanguageServersRegistry {
 			}
 			return super.createLanguageClient();
 		}
-
 		@SuppressWarnings("unchecked")
 		@Override
 		public Class<? extends LanguageServer> getServerInterface() {
@@ -157,26 +138,21 @@ public class LanguageServersRegistry {
 			}
 			return super.getServerInterface();
 		}
-
 	}
-
 	static class LaunchConfigurationLanguageServerDefinition extends LanguageServerDefinition {
 		final ILaunchConfiguration launchConfiguration;
 		final Set<String> launchModes;
-
 		public LaunchConfigurationLanguageServerDefinition(ILaunchConfiguration launchConfiguration,
 				Set<String> launchModes) {
 			super(launchConfiguration.getName(), launchConfiguration.getName(), false);
 			this.launchConfiguration = launchConfiguration;
 			this.launchModes = launchModes;
 		}
-
 		@Override
 		public StreamConnectionProvider createConnectionProvider() {
 			return new LaunchConfigurationStreamProvider(this.launchConfiguration, launchModes);
 		}
 	}
-
 	private static LanguageServersRegistry INSTANCE = null;
 	public static LanguageServersRegistry getInstance() {
 		if (INSTANCE == null) {
@@ -184,15 +160,12 @@ public class LanguageServersRegistry {
 		}
 		return INSTANCE;
 	}
-
 	private List<ContentTypeToLanguageServerDefinition> connections = new ArrayList<>();
 	private IPreferenceStore preferenceStore;
-
 	private LanguageServersRegistry() {
 		this.preferenceStore = LanguageServerPlugin.getDefault().getPreferenceStore();
 		initialize();
 	}
-
 	private void initialize() {
 		String prefs = preferenceStore.getString(CONTENT_TYPE_TO_LSP_LAUNCH_PREF_KEY);
 		if (prefs != null && !prefs.isEmpty()) {
@@ -204,7 +177,6 @@ public class LanguageServersRegistry {
 				}
 			}
 		}
-
 		Map<String, LanguageServerDefinition> servers = new HashMap<>();
 		List<ContentTypeMapping> contentTypes = new ArrayList<>();
 		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
@@ -239,7 +211,6 @@ public class LanguageServersRegistry {
 				}
 			}
 		}
-
 		for (ContentTypeMapping mapping : contentTypes) {
 			LanguageServerDefinition lsDefinition = servers.get(mapping.id);
 			if (lsDefinition != null) {
@@ -249,7 +220,6 @@ public class LanguageServersRegistry {
 			}
 		}
 	}
-
 	private void persistContentTypeToLaunchConfigurationMapping() {
 		StringBuilder builder = new StringBuilder();
 		for (ContentTypeToLSPLaunchConfigEntry entry : getContentTypeToLSPLaunches()) {
@@ -268,7 +238,6 @@ public class LanguageServersRegistry {
 			}
 		}
 	}
-
 	/**
 	 * @param contentType
 	 * @return the {@link LanguageServerDefinition}s <strong>directly</strong> associated to the given content-type.
@@ -290,38 +259,31 @@ public class LanguageServersRegistry {
 			})
 			.collect(Collectors.toList());
 	}
-
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
 		ContentTypeToLSPLaunchConfigEntry mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig,
 				launchMode);
 		connections.add(mapping);
 		persistContentTypeToLaunchConfigurationMapping();
 	}
-
 	public void registerAssociation(@NonNull IContentType contentType,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId,
 			EnablementTester enablement) {
 		if (languageId != null) {
 			serverDefinition.registerAssociation(contentType, languageId);
 		}
-
 		connections.add(new ContentTypeToLanguageServerDefinition(contentType, serverDefinition, enablement));
 	}
-
 	public void setAssociations(List<ContentTypeToLSPLaunchConfigEntry> wc) {
 		this.connections.removeIf(ContentTypeToLSPLaunchConfigEntry.class::isInstance);
 		this.connections.addAll(wc);
 		persistContentTypeToLaunchConfigurationMapping();
 	}
-
 	public List<ContentTypeToLSPLaunchConfigEntry> getContentTypeToLSPLaunches() {
 		return this.connections.stream().filter(ContentTypeToLSPLaunchConfigEntry.class::isInstance).map(ContentTypeToLSPLaunchConfigEntry.class::cast).collect(Collectors.toList());
 	}
-
 	public List<ContentTypeToLanguageServerDefinition> getContentTypeToLSPExtensions() {
 		return this.connections.stream().filter(mapping -> mapping.getValue() instanceof ExtensionLanguageServerDefinition).collect(Collectors.toList());
 	}
-
 	public @Nullable LanguageServerDefinition getDefinition(@NonNull String languageServerId) {
 		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
 			if (mapping.getValue().id.equals(languageServerId)) {
@@ -330,18 +292,15 @@ public class LanguageServersRegistry {
 		}
 		return null;
 	}
-
 	/**
 	 * internal class to capture content-type mappings for language servers
 	 */
 	private static class ContentTypeMapping {
-
 		@NonNull public final String id;
 		@NonNull public final IContentType contentType;
 		@Nullable public final String languageId;
 		@Nullable
 		public final EnablementTester enablement;
-
 		public ContentTypeMapping(@NonNull IContentType contentType, @NonNull String id, @Nullable String languageId,
 				@Nullable EnablementTester enablement) {
 			this.contentType = contentType;
@@ -349,9 +308,7 @@ public class LanguageServersRegistry {
 			this.languageId = languageId;
 			this.enablement = enablement;
 		}
-
 	}
-
 	/**
 	 * @param file
 	 * @param serverDefinition
@@ -360,7 +317,6 @@ public class LanguageServersRegistry {
 	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) {
 		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).contains(serverDefinition);
 	}
-
 	/**
 	 * @param document
 	 * @param serverDefinition
@@ -369,12 +325,10 @@ public class LanguageServersRegistry {
 	public boolean matches(@NonNull IDocument document, @NonNull LanguageServerDefinition serverDefinition) {
 		return getAvailableLSFor(LSPEclipseUtils.getDocumentContentTypes(document)).contains(serverDefinition);
 	}
-
 	public boolean canUseLanguageServer(@NonNull IEditorInput editorInput) {
 		return !getAvailableLSFor(
 				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName()))).isEmpty();
 	}
-
 	public boolean canUseLanguageServer(@NonNull IDocument document) {
 		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
 		if (buffer == null) {
@@ -387,11 +341,9 @@ public class LanguageServersRegistry {
 		return !getAvailableLSFor(
 				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(name))).isEmpty();
 	}
-
 	public boolean canUseLanguageServer(@NonNull IFile file) {
 		return !getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).isEmpty();
 	}
-
 	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes) {
 		Set<LanguageServerDefinition> res = new HashSet<>();
 		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
@@ -401,5 +353,4 @@ public class LanguageServersRegistry {
 		}
 		return res;
 	}
-
 }

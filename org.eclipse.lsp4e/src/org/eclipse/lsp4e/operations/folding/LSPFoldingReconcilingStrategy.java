@@ -9,7 +9,6 @@
  *  Angelo Zerr <angelo.zerr@gmail.com> - Add support for 'textDocument/foldingRange' - Bug 537706
  */
 package org.eclipse.lsp4e.operations.folding;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,7 +18,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -43,7 +41,6 @@ import org.eclipse.swt.graphics.FontMetrics;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
-
 /**
  * LSP folding reconcilinig strategy which consumes the
  * `textDocument/foldingRange` command.
@@ -51,12 +48,10 @@ import org.eclipse.swt.widgets.Canvas;
  */
 public class LSPFoldingReconcilingStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, IProjectionListener {
-
 	private IDocument document;
 	private ProjectionAnnotationModel projectionAnnotationModel;
 	private CompletableFuture<List<FoldingRange>> request;
 	private ProjectionViewer viewer;
-
 	/**
 	 * A FoldingAnnotation is a {@link ProjectionAnnotation} it is folding and
 	 * overriding the paint method (in a hacky type way) to prevent one line folding
@@ -64,7 +59,6 @@ public class LSPFoldingReconcilingStrategy
 	 */
 	protected class FoldingAnnotation extends ProjectionAnnotation {
 		private boolean visible; /* workaround for BUG85874 */
-
 		/**
 		 * Creates a new FoldingAnnotation.
 		 *
@@ -75,7 +69,6 @@ public class LSPFoldingReconcilingStrategy
 			super(isCollapsed);
 			visible = false;
 		}
-
 		/**
 		 * Does not paint hidden annotations. Annotations are hidden when they only span
 		 * one line.
@@ -103,7 +96,6 @@ public class LSPFoldingReconcilingStrategy
 			visible = true;
 			super.paint(gc, canvas, rectangle);
 		}
-
 		@Override
 		public void markCollapsed() {
 			/* workaround for BUG85874 */
@@ -112,13 +104,11 @@ public class LSPFoldingReconcilingStrategy
 				super.markCollapsed();
 		}
 	}
-
 	@Override
 	public void reconcile(IRegion subRegion) {
 		if (projectionAnnotationModel == null || document == null) {
 			return;
 		}
-
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return;
@@ -134,7 +124,6 @@ public class LSPFoldingReconcilingStrategy
 			});
 		});
 	}
-
 	private void applyFolding(List<FoldingRange> ranges) {
 		// these are what are passed off to the annotation model to
 		// actually create and maintain the annotations
@@ -142,10 +131,8 @@ public class LSPFoldingReconcilingStrategy
 		List<FoldingAnnotation> deletions = new ArrayList<>();
 		List<FoldingAnnotation> existing = new ArrayList<>();
 		Map<Annotation, Position> additions = new HashMap<>();
-
 		// find and mark all folding annotations with length 0 for deletion
 		markInvalidAnnotationsForDeletion(deletions, existing);
-
 		try {
 			if (ranges != null) {
 				Collections.sort(ranges, Comparator.comparing(FoldingRange::getEndLine));
@@ -157,7 +144,6 @@ public class LSPFoldingReconcilingStrategy
 		} catch (BadLocationException e) {
 			// should never occur
 		}
-
 		// be sure projection has not been disabled
 		if (projectionAnnotationModel != null) {
 			if (!existing.isEmpty()) {
@@ -169,14 +155,12 @@ public class LSPFoldingReconcilingStrategy
 					modifications.toArray(new Annotation[0]));
 		}
 	}
-
 	private static boolean canFold(ServerCapabilities capabilities) {
 		return capabilities.getFoldingRangeProvider() != null
 				&& ((capabilities.getFoldingRangeProvider().getLeft() != null
 						&& capabilities.getFoldingRangeProvider().getLeft())
 						|| capabilities.getFoldingRangeProvider().getRight() != null);
 	}
-
 	public void install(ProjectionViewer viewer) {
 		if (this.viewer != null) {
 			this.viewer.removeProjectionListener(this);
@@ -185,7 +169,6 @@ public class LSPFoldingReconcilingStrategy
 		this.viewer.addProjectionListener(this);
 		this.projectionAnnotationModel = this.viewer.getProjectionAnnotationModel();
 	}
-
 	public void uninstall() {
 		setDocument(null);
 		if (viewer != null) {
@@ -194,24 +177,20 @@ public class LSPFoldingReconcilingStrategy
 		}
 		projectionDisabled();
 	}
-
 	@Override
 	public void setDocument(IDocument document) {
 		this.document = document;
 	}
-
 	@Override
 	public void projectionDisabled() {
 		projectionAnnotationModel = null;
 	}
-
 	@Override
 	public void projectionEnabled() {
 		if (viewer != null) {
 			projectionAnnotationModel = viewer.getProjectionAnnotationModel();
 		}
 	}
-
 	/**
 	 * Update annotations.
 	 *
@@ -242,7 +221,6 @@ public class LSPFoldingReconcilingStrategy
 			additions.put(new FoldingAnnotation(false), newPos);
 		}
 	}
-
 	/**
 	 * Update annotations.
 	 *
@@ -261,7 +239,6 @@ public class LSPFoldingReconcilingStrategy
 			List<FoldingAnnotation> deletions) {
 		if (existingAnnotation instanceof FoldingAnnotation) {
 			FoldingAnnotation foldingAnnotation = (FoldingAnnotation) existingAnnotation;
-
 			// if a new position can be calculated then update the position of
 			// the annotation,
 			// else the annotation needs to be deleted
@@ -278,7 +255,6 @@ public class LSPFoldingReconcilingStrategy
 			}
 		}
 	}
-
 	/**
 	 * <p>
 	 * Searches the given {@link DirtyRegion} for annotations that now have a length
@@ -310,17 +286,14 @@ public class LSPFoldingReconcilingStrategy
 			}
 		}
 	}
-
 	@Override
 	public void reconcile(DirtyRegion dirtyRegion, IRegion partition) {
 		// Do nothing
 	}
-
 	@Override
 	public void setProgressMonitor(IProgressMonitor monitor) {
 		// Do nothing
 	}
-
 	@Override
 	public void initialReconcile() {
 		reconcile(null);

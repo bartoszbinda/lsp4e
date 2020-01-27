@@ -14,7 +14,6 @@
  *  Kris De Volder (Pivotal, Inc.) - dynamic command registration
  *******************************************************************************/
 package org.eclipse.lsp4e;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -35,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
@@ -110,19 +108,15 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
 public class LanguageServerWrapper {
-
 	private IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
 		public void bufferDisposed(IFileBuffer buffer) {
 			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
 			disconnect(filePath);
 		}
-
 		@Override
 		public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) {
 			if (isDirty) {
@@ -134,9 +128,7 @@ public class LanguageServerWrapper {
 				documentListener.documentSaved(buffer.getModificationStamp());
 			}
 		}
-
 	};
-
 	@NonNull
 	public final LanguageServerDefinition serverDefinition;
 	@Nullable
@@ -145,26 +137,22 @@ public class LanguageServerWrapper {
 	protected final Set<@NonNull IProject> allWatchedProjects;
 	@NonNull
 	protected Map<@NonNull IPath, @NonNull DocumentContentSynchronizer> connectedDocuments;
-
 	protected StreamConnectionProvider lspStreamProvider;
 	private Future<?> launcherFuture;
 	private CompletableFuture<Void> initializeFuture;
 	private LanguageServer languageServer;
 	private ServerCapabilities serverCapabilities;
-
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
 	 */
 	private @NonNull Map<@NonNull String, @NonNull Runnable> dynamicRegistrations = new HashMap<>();
 	private boolean initiallySupportsWorkspaceFolders = false;
-
 	public LanguageServerWrapper(@Nullable IProject project, @NonNull LanguageServerDefinition serverDefinition) {
 		this.initialProject = project;
 		this.allWatchedProjects = new HashSet<>();
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
 	}
-
 	/**
 	 * Starts a language server and triggers initialization. If language server is
 	 * started and active, does nothing. If language server is inactive, restart it.
@@ -192,12 +180,10 @@ public class LanguageServerWrapper {
 				this.lspStreamProvider = serverDefinition.createConnectionProvider();
 			}
 			this.lspStreamProvider.start();
-
 			LanguageClientImpl client = serverDefinition.createLanguageClient();
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			final InitializeParams initParams = new InitializeParams();
 			initParams.setProcessId(getCurrentProcessId());
-
 			URI rootURI = null;
 			IProject project = this.initialProject;
 			if (project != null && project.exists()) {
@@ -215,11 +201,9 @@ public class LanguageServerWrapper {
 						URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
 						this.lspStreamProvider.handleMessage(message, this.languageServer, root);
 					}));
-
 			this.languageServer = launcher.getRemoteProxy();
 			client.connect(languageServer, this);
 			this.launcherFuture = launcher.startListening();
-
 			String name = "Eclipse IDE"; //$NON-NLS-1$
 			if (Platform.getProduct() != null) {
 				name = Platform.getProduct().getName();
@@ -274,17 +258,14 @@ public class LanguageServerWrapper {
 			initParams.setCapabilities(
 					new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, null));
 			initParams.setClientName(name);
-
 			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 			initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
-
 			// no then...Async future here as we want this chain of operation to be sequential and
 			// "atomic"-ish
 			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> this.languageServer.initialized(new InitializedParams()));
-
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRunAsync(() -> {
 				if (this.initialProject != null) {
@@ -304,13 +285,11 @@ public class LanguageServerWrapper {
 			stop();
 		}
 	}
-
 	private static boolean supportsWorkspaceFolders(ServerCapabilities serverCapabilities) {
 		return serverCapabilities != null && serverCapabilities.getWorkspace() != null
 				&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
 				&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
 	}
-
 	private Integer getCurrentProcessId() {
 		String segment = ManagementFactory.getRuntimeMXBean().getName().split("@")[0]; //$NON-NLS-1$
 		try {
@@ -319,7 +298,6 @@ public class LanguageServerWrapper {
 			return null;
 		}
 	}
-
 	private void logMessage(Message message) {
 		if (message instanceof ResponseMessage && ((ResponseMessage) message).getError() != null
 				&& ((ResponseMessage) message).getId()
@@ -330,14 +308,12 @@ public class LanguageServerWrapper {
 			LanguageServerPlugin.logInfo(message.getClass().getSimpleName() + '\n' + message.toString());
 		}
 	}
-
 	/**
 	 * @return whether the underlying connection to language server is still active
 	 */
 	public boolean isActive() {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
-
 	synchronized void stop() {
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
@@ -345,7 +321,6 @@ public class LanguageServerWrapper {
 		}
 		this.serverCapabilities = null;
 		this.dynamicRegistrations.clear();
-
 		final Future<?> serverFuture = this.launcherFuture;
 		final StreamConnectionProvider provider = this.lspStreamProvider;
 		Runnable stopFutureAndProvider = () -> {
@@ -372,14 +347,11 @@ public class LanguageServerWrapper {
 			disconnect(this.connectedDocuments.keySet().iterator().next());
 		}
 		this.languageServer = null;
-
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
-
 	public void connect(@NonNull IFile file, IDocument document) throws IOException {
 		connect(file.getLocation(), document);
 	}
-
 	public void connect(IDocument document) throws IOException {
 		IFile file = LSPEclipseUtils.getFile(document);
 		if (file != null && file.exists()) {
@@ -388,7 +360,6 @@ public class LanguageServerWrapper {
 			connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
 		}
 	}
-
 	protected synchronized void watchProject(IProject project, boolean isInitializationRootProject) {
 		if (this.allWatchedProjects.contains(project)) {
 			return;
@@ -416,7 +387,6 @@ public class LanguageServerWrapper {
 			this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(params);
 		}
 	}
-
 	private synchronized void unwatchProject(@NonNull IProject project) {
 		this.allWatchedProjects.remove(project);
 		// TODO? disconnect resources?
@@ -428,7 +398,6 @@ public class LanguageServerWrapper {
 			this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(params);
 		}
 	}
-
 	/**
 	 * Check whether this LS is suitable for provided project. Starts the LS if not
 	 * already started.
@@ -440,10 +409,8 @@ public class LanguageServerWrapper {
 		if (project.equals(this.initialProject) || this.allWatchedProjects.contains(project)) {
 			return true;
 		}
-
 		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
-
 	/**
 	 * @return true, if the server supports multi-root workspaces via workspace
 	 *         folders
@@ -462,20 +429,17 @@ public class LanguageServerWrapper {
 		}
 		return initiallySupportsWorkspaceFolders || supportsWorkspaceFolders(serverCapabilities);
 	}
-
 	/**
 	 * To make public when we support non IFiles
 	 *
 	 * @noreference internal so far
 	 */
-	public void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
+	private void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
 		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
-
 		IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(thePath);
 		if (file.exists()) {
 			watchProject(file.getProject(), false);
 		}
-
 		if (this.connectedDocuments.containsKey(thePath)) {
 			return;
 		}
@@ -512,7 +476,6 @@ public class LanguageServerWrapper {
 			}
 		});
 	}
-
 	public void disconnect(IPath path) {
 		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(path);
 		if (documentListener != null) {
@@ -523,7 +486,6 @@ public class LanguageServerWrapper {
 			stop();
 		}
 	}
-
 	public void disconnectContentType(@NonNull IContentType contentType) {
 		List<IPath> pathsToDisconnect = new ArrayList<>();
 		for (IPath path : connectedDocuments.keySet()) {
@@ -538,7 +500,6 @@ public class LanguageServerWrapper {
 			disconnect(path);
 		}
 	}
-
 	/**
 	 * checks if the wrapper is already connected to the document at the given path
 	 *
@@ -547,7 +508,6 @@ public class LanguageServerWrapper {
 	public boolean isConnectedTo(IPath location) {
 		return connectedDocuments.containsKey(location);
 	}
-
 	/**
 	 * Starts and returns the language server, regardless of if it is initialized.
 	 * If not in the UI Thread, will wait to return the initialized server.
@@ -564,7 +524,6 @@ public class LanguageServerWrapper {
 			return languagServerFuture.join();
 		}
 	}
-
 	/**
 	 * Starts the language server and returns a CompletableFuture waiting for the
 	 * server to be initialized. If done in the UI stream, a job will be created
@@ -595,7 +554,6 @@ public class LanguageServerWrapper {
 		}
 		return CompletableFuture.completedFuture(this.languageServer);
 	}
-
 	/**
 	 * Warning: this is a long running operation
 	 *
@@ -614,10 +572,8 @@ public class LanguageServerWrapper {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		}
-
 		return this.serverCapabilities;
 	}
-
 	/**
 	 * @return The language ID that this wrapper is dealing with if defined in the
 	 *         content type mapping for the language server
@@ -632,7 +588,6 @@ public class LanguageServerWrapper {
 		}
 		return null;
 	}
-
 	void registerCapability(RegistrationParams params) {
 		params.getRegistrations().forEach(reg -> {
 			if ("workspace/didChangeWorkspaceFolders".equals(reg.getMethod())) { //$NON-NLS-1$
@@ -661,7 +616,6 @@ public class LanguageServerWrapper {
 			}
 		});
 	}
-
 	private void addRegistration(@NonNull Registration reg, @NonNull Runnable unregistrationHandler) {
 		String regId = reg.getId();
 		synchronized (dynamicRegistrations) {
@@ -669,7 +623,6 @@ public class LanguageServerWrapper {
 			dynamicRegistrations.put(regId, unregistrationHandler);
 		}
 	}
-
 	synchronized void setWorkspaceFoldersEnablement(boolean enable) {
 		if (serverCapabilities == null) {
 			this.serverCapabilities = new ServerCapabilities();
@@ -686,7 +639,6 @@ public class LanguageServerWrapper {
 		}
 		folders.setSupported(enable);
 	}
-
 	synchronized void registerCommands(List<String> newCommands) {
 		ServerCapabilities caps = this.getServerCapabilities();
 		if (caps != null) {
@@ -704,7 +656,6 @@ public class LanguageServerWrapper {
 			throw new IllegalStateException("Dynamic command registration failed! Server not yet initialized?"); //$NON-NLS-1$
 		}
 	}
-
 	void unregisterCapability(UnregistrationParams params) {
 		params.getUnregisterations().forEach(reg -> {
 			String id = reg.getId();
@@ -718,7 +669,6 @@ public class LanguageServerWrapper {
 			}
 		});
 	}
-
 	void unregisterCommands(List<String> cmds) {
 		ServerCapabilities caps = this.getServerCapabilities();
 		if (caps != null) {
@@ -729,7 +679,6 @@ public class LanguageServerWrapper {
 			}
 		}
 	}
-
 	int getVersion(IFile file) {
 		if (file != null && file.getLocation() != null) {
 			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocation());
@@ -739,7 +688,6 @@ public class LanguageServerWrapper {
 		}
 		return -1;
 	}
-
 	public boolean canOperate(@NonNull IDocument document) {
 		if (this.isConnectedTo(new Path(LSPEclipseUtils.toUri(document).getPath()))) {
 			return true;
@@ -753,5 +701,4 @@ public class LanguageServerWrapper {
 		}
 		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
-
 }

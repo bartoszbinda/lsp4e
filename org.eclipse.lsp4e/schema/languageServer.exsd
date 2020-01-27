@@ -9,9 +9,7 @@
          This extension point allows to define Language Servers and enable those on some content-types.
       </documentation>
    </annotation>
-
    <include schemaLocation="schema://org.eclipse.core.expressions/schema/expressionLanguage.exsd"/>
-
    <element name="extension">
       <annotation>
          <appinfo>
@@ -49,7 +47,6 @@
          </attribute>
       </complexType>
    </element>
-
    <element name="server">
       <complexType>
          <attribute name="id" type="string" use="required">
@@ -106,7 +103,6 @@ Since 0.10
          </attribute>
       </complexType>
    </element>
-
    <element name="contentTypeMapping">
       <complexType>
          <sequence>
@@ -141,7 +137,6 @@ Since 0.10
          </attribute>
       </complexType>
    </element>
-
    <element name="enabledWhen">
       <annotation>
          <documentation>
@@ -173,7 +168,6 @@ Since 0.10
          </attribute>
       </complexType>
    </element>
-
    <annotation>
       <appinfo>
          <meta.section type="since"/>
@@ -182,7 +176,6 @@ Since 0.10
          [Enter the first release in which this extension point appears.]
       </documentation>
    </annotation>
-
    <annotation>
       <appinfo>
          <meta.section type="examples"/>
@@ -191,7 +184,6 @@ Since 0.10
          [Enter extension point usage example here.]
       </documentation>
    </annotation>
-
    <annotation>
       <appinfo>
          <meta.section type="apiinfo"/>
@@ -200,7 +192,6 @@ Since 0.10
          [Enter API information here.]
       </documentation>
    </annotation>
-
    <annotation>
       <appinfo>
          <meta.section type="implementation"/>
@@ -209,6 +200,4 @@ Since 0.10
          [Enter information about supplied implementation of this extension point.]
       </documentation>
    </annotation>
-
-
 </schema>
