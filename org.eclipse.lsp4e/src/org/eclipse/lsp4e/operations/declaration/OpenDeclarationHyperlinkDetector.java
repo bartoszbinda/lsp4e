@@ -12,7 +12,6 @@
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.declaration;
-
 import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,7 +22,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -34,11 +32,10 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
-
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
-
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		final IDocument document = textViewer.getDocument();
@@ -71,7 +68,23 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 								} else if (locations.isLeft()) {
 									allLinks.addAll(locations.getLeft().stream().filter(Objects::nonNull).map(location -> new LSBasedHyperlink(location, linkRegion)).collect(Collectors.toList()));
 								} else {
-									allLinks.addAll(locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> new LSBasedHyperlink(locationLink, linkRegion)).collect(Collectors.toList()));
+									allLinks.addAll(
+											locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> {
+												IRegion selectionRegion = linkRegion;
+												Range originSelectionRange = locationLink.getOriginSelectionRange();
+												if (originSelectionRange != null) {
+													try {
+														int offset = LSPEclipseUtils
+																.toOffset(originSelectionRange.getStart(), document);
+														int endOffset = LSPEclipseUtils
+																.toOffset(originSelectionRange.getEnd(), document);
+														selectionRegion = new Region(offset, endOffset - offset);
+													} catch (BadLocationException e) {
+														LanguageServerPlugin.logError(e.getMessage(), e);
+													}
+												}
+												return new LSBasedHyperlink(locationLink, selectionRegion);
+											}).collect(Collectors.toList()));
 								}
 							})
 						).toArray(CompletableFuture[]::new)).thenApply(theVoid -> allLinks);
@@ -91,7 +104,6 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 			return null;
 		}
 	}
-
 	/**
 	 * This method is only a workaround for missing range value (which can be used
 	 * to highlight hyperlink) in LSP 'definition' response.
@@ -106,12 +118,9 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 	private IRegion findWord(IDocument document, int offset) {
 		int start = -2;
 		int end = -1;
-
 		try {
-
 			int pos = offset;
 			char c;
-
 			while (pos >= 0) {
 				c = document.getChar(pos);
 				if (!Character.isUnicodeIdentifierPart(c)) {
@@ -119,25 +128,19 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				}
 				--pos;
 			}
-
 			start = pos;
-
 			pos = offset;
 			int length = document.getLength();
-
 			while (pos < length) {
 				c = document.getChar(pos);
 				if (!Character.isUnicodeIdentifierPart(c))
 					break;
 				++pos;
 			}
-
 			end = pos;
-
 		} catch (BadLocationException x) {
 			LanguageServerPlugin.logWarning(x.getMessage(), x);
 		}
-
 		if (start >= -1 && end > -1) {
 			if (start == offset && end == offset)
 				return new Region(offset, 0);
@@ -146,8 +149,6 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 			else
 				return new Region(start + 1, end - start - 1);
 		}
-
 		return null;
 	}
-
 }
