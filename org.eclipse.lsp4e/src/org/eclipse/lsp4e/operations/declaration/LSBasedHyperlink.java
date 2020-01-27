@@ -12,7 +12,6 @@
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.declaration;
-
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -22,40 +21,39 @@ import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
-
 public class LSBasedHyperlink implements IHyperlink {
-
-	private Either<Location, LocationLink> location;
-	private IRegion highlightRegion;
-
+	private final Either<Location, LocationLink> location;
+	private final IRegion highlightRegion;
 	public LSBasedHyperlink(Either<Location, LocationLink> location, IRegion highlightRegion) {
 		this.location = location;
 		this.highlightRegion = highlightRegion;
 	}
-
 	public LSBasedHyperlink(Location location, IRegion linkRegion) {
 		this(Either.forLeft(location), linkRegion);
 	}
-
 	public LSBasedHyperlink(LocationLink locationLink, IRegion linkRegion) {
 		this(Either.forRight(locationLink), linkRegion);
 	}
-
 	@Override
 	public IRegion getHyperlinkRegion() {
 		return this.highlightRegion;
 	}
-
 	@Override
 	public String getTypeLabel() {
 		return Messages.hyperlinkLabel;
 	}
-
 	@Override
 	public String getHyperlinkText() {
 		return Messages.hyperlinkLabel;
 	}
-
+	/**
+	 *
+	 * @return
+	 * @noreference test only
+	 */
+	public Either<Location, LocationLink> getLocation() {
+		return location;
+	}
 	@Override
 	public void open() {
 		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
@@ -65,5 +63,4 @@ public class LSBasedHyperlink implements IHyperlink {
 			LSPEclipseUtils.openInEditor(location.getRight(), page);
 		}
 	}
-
 }

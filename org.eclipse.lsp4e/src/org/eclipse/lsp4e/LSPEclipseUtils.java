@@ -16,7 +16,6 @@
  *  Alex Boyko (Pivotal Inc.) - bug 543435 (WorkspaceEdit apply handling)
  *******************************************************************************/
 package org.eclipse.lsp4e;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBufferManager;
@@ -116,17 +114,14 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 /**
  * Some utility methods to convert between Eclipse and LS-API types
  */
 public class LSPEclipseUtils {
-
 	private static final String FILE = "file:"; //$NON-NLS-1$
 	private static final String FILE_SLASH = "file:/"; //$NON-NLS-1$
 	private static final String HTML = "html"; //$NON-NLS-1$
@@ -134,11 +129,9 @@ public class LSPEclipseUtils {
 	private static final String MD = "md"; //$NON-NLS-1$
 	private static final int MAX_BROWSER_NAME_LENGTH = 30;
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
-
 	private LSPEclipseUtils() {
 		// this class shouldn't be instantiated
 	}
-
 	public static ITextEditor getActiveTextEditor() {
 		IEditorPart editorPart = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
 		if(editorPart instanceof ITextEditor) {
@@ -152,18 +145,24 @@ public class LSPEclipseUtils {
 		}
 		return null;
 	}
-
 	public static Position toPosition(int offset, IDocument document) throws BadLocationException {
 		Position res = new Position();
 		res.setLine(document.getLineOfOffset(offset));
 		res.setCharacter(offset - document.getLineInformationOfOffset(offset).getOffset());
 		return res;
 	}
-
 	public static int toOffset(Position position, IDocument document) throws BadLocationException {
 		return document.getLineInformation(position.getLine()).getOffset() + position.getCharacter();
 	}
-
+	public static boolean isOffsetInRange(int offset, Range range, IDocument document) {
+		try {
+			return offset != -1 && offset >= toOffset(range.getStart(), document)
+					&& offset <= toOffset(range.getEnd(), document);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+			return false;
+		}
+	}
 	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document)
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
@@ -175,7 +174,6 @@ public class LSPEclipseUtils {
 		param.setTextDocument(id);
 		return param;
 	}
-
 	/**
 	 * @param fileUri
 	 * @param offset
@@ -197,7 +195,6 @@ public class LSPEclipseUtils {
 		param.setTextDocument(id);
 		return param;
 	}
-
 	public static TextDocumentPositionParams toTextDocumentPosistionParams(int offset, IDocument document)
 			throws BadLocationException {
 		URI uri = toUri(document);
@@ -212,7 +209,6 @@ public class LSPEclipseUtils {
 		param.setTextDocument(id);
 		return param;
 	}
-
 	public static URI toUri(IDocument document) {
 		IFile file = getFile(document);
 		if (file != null) {
@@ -225,7 +221,6 @@ public class LSPEclipseUtils {
 		}
 		return null;
 	}
-
 	public static int toEclipseMarkerSeverity(DiagnosticSeverity lspSeverity) {
 		if (lspSeverity == null) {
 			// if severity is empty it is up to the client to interpret diagnostics
@@ -240,12 +235,10 @@ public class LSPEclipseUtils {
 			return IMarker.SEVERITY_INFO;
 		}
 	}
-
 	public static IFile getFileHandle(@Nullable String uri) {
 		if (uri == null || uri.isEmpty() || !uri.startsWith(FILE)) {
 			return null;
 		}
-
 		String convertedUri = uri.replace("file:///", FILE_SLASH); //$NON-NLS-1$
 		convertedUri = convertedUri.replace("file://", FILE_SLASH); //$NON-NLS-1$
 		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
@@ -266,13 +259,11 @@ public class LSPEclipseUtils {
 		}
 		return project.getFile(projectRelativePath);
 	}
-
 	@Nullable
 	public static IResource findResourceFor(@Nullable String uri) {
 		if (uri == null || uri.isEmpty() || !uri.startsWith(FILE)) {
 			return null;
 		}
-
 		String convertedUri = uri.replace("file:///", FILE_SLASH); //$NON-NLS-1$
 		convertedUri = convertedUri.replace("file://", FILE_SLASH); //$NON-NLS-1$
 		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
@@ -294,14 +285,12 @@ public class LSPEclipseUtils {
 			return project.findMember(projectRelativePath);
 		}
 	}
-
 	public static void applyEdit(TextEdit textEdit, IDocument document) throws BadLocationException {
 		document.replace(
 				LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document),
 				LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document),
 				textEdit.getNewText());
 	}
-
 	/**
 	 * Method will apply all edits to document as single modification. Needs to
 	 * be executed in UI thread.
@@ -315,12 +304,10 @@ public class LSPEclipseUtils {
 		if (document == null || edits == null || edits.isEmpty()) {
 			return;
 		}
-
 		IDocumentUndoManager manager = DocumentUndoManagerRegistry.getDocumentUndoManager(document);
 		if (manager != null) {
 			manager.beginCompoundChange();
 		}
-
 		MultiTextEdit edit = new MultiTextEdit();
 		for (TextEdit textEdit : edits) {
 			if (textEdit != null) {
@@ -344,13 +331,11 @@ public class LSPEclipseUtils {
 			manager.endCompoundChange();
 		}
 	}
-
 	@Nullable
 	public static IDocument getDocument(@Nullable IResource resource) {
 		if (resource == null) {
 			return null;
 		}
-
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 		IDocument document = null;
 		ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
@@ -370,7 +355,6 @@ public class LSPEclipseUtils {
 		}
 		return document;
 	}
-
 	@Nullable
 	private static IDocument getDocument(URI uri) {
 		if (uri == null) {
@@ -383,7 +367,6 @@ public class LSPEclipseUtils {
 		if (!new File(uri).isFile()) {
 			return null;
 		}
-
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 		IDocument document = null;
 		IFileStore store = null;
@@ -410,16 +393,12 @@ public class LSPEclipseUtils {
 		}
 		return document;
 	}
-
 	public static void openInEditor(Location location, IWorkbenchPage page) {
 		open(location.getUri(), page, location.getRange());
 	}
-
 	public static void openInEditor(LocationLink link, IWorkbenchPage page) {
 		open(link.getTargetUri(), page, link.getTargetSelectionRange());
-
 	}
-
 	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
 		if (uri.startsWith(FILE)) {
 			openFileLocationInEditor(uri, page, optionalRange);
@@ -429,7 +408,6 @@ public class LSPEclipseUtils {
 			openHttpLocationInBrowser(uri, page);
 		}
 	}
-
 	protected static void openIntroURL(final String uri) {
 		IIntroURL introUrl = IntroURLFactory.createIntroURL(uri);
 		if (introUrl != null) {
@@ -442,31 +420,25 @@ public class LSPEclipseUtils {
 			}
 		}
 	}
-
 	protected static void openHttpLocationInBrowser(final String uri, IWorkbenchPage page) {
 		page.getWorkbenchWindow().getShell().getDisplay().asyncExec(() -> {
 			try {
 				URL url = new URL(uri);
-
 				IWorkbenchBrowserSupport browserSupport = page.getWorkbenchWindow().getWorkbench()
 						.getBrowserSupport();
-
 				String browserName = uri;
 				if (browserName.length() > MAX_BROWSER_NAME_LENGTH) {
 					browserName = uri.substring(0, MAX_BROWSER_NAME_LENGTH - 1) + '\u2026';
 				}
-
 				browserSupport
 						.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.LOCATION_BAR
 								| IWorkbenchBrowserSupport.NAVIGATION_BAR, "lsp4e-symbols", browserName, uri) //$NON-NLS-1$
 						.openURL(url);
-
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
 		});
 	}
-
 	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, Range optionalRange) {
 		IEditorPart part = null;
 		IDocument targetDocument = null;
@@ -493,7 +465,6 @@ public class LSPEclipseUtils {
 		try {
 			if (part != null && part.getEditorSite() != null && part.getEditorSite().getSelectionProvider() != null && optionalRange != null) {
 				ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
-
 				int offset = LSPEclipseUtils.toOffset(optionalRange.getStart(), targetDocument);
 				int endOffset = LSPEclipseUtils.toOffset(optionalRange.getEnd(), targetDocument);
 				selectionProvider.setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
@@ -502,7 +473,6 @@ public class LSPEclipseUtils {
 			LanguageServerPlugin.logError(e);
 		}
 	}
-
 	public static IDocument getDocument(ITextEditor editor) {
 		try {
 			Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
@@ -514,7 +484,6 @@ public class LSPEclipseUtils {
 			return null;
 		}
 	}
-
 	public static IDocument getDocument(IEditorInput editorInput) {
 		if(editorInput instanceof IFileEditorInput) {
 			IFileEditorInput fileEditorInput = (IFileEditorInput)editorInput;
@@ -533,7 +502,6 @@ public class LSPEclipseUtils {
 		}
 		return null;
 	}
-
 	/**
 	 * Applies a workspace edit. It does simply change the underlying documents.
 	 *
@@ -548,7 +516,6 @@ public class LSPEclipseUtils {
 			LanguageServerPlugin.logError(e);
 		}
 	}
-
 	/**
 	 * Returns a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
 	 *
@@ -650,7 +617,6 @@ public class LSPEclipseUtils {
 		}
 		return change;
 	}
-
 	/**
 	 * Transform LSP {@link TextEdit} list into ltk {@link DocumentChange} and add
 	 * it in the given ltk {@link CompositeChange}.
@@ -668,15 +634,12 @@ public class LSPEclipseUtils {
 		return textEdits.stream().map(te -> new LSPTextChange("LSP Text Edit", uri, te)) //$NON-NLS-1$
 				.toArray(LSPTextChange[]::new);
 	}
-
 	public static URI toUri(IPath absolutePath) {
 		return toUri(absolutePath.toFile());
 	}
-
 	public static URI toUri(IResource resource) {
 		return toUri(resource.getLocation());
 	}
-
 	public static URI toUri(File file) {
 		// URI scheme specified by language server protocol and LSP
 		try {
@@ -686,7 +649,6 @@ public class LSPEclipseUtils {
 			return file.getAbsoluteFile().toURI();
 		}
 	}
-
 	// TODO consider using Entry/SimpleEntry instead
 	private static final class Pair<K, V> {
 		K key;
@@ -696,7 +658,6 @@ public class LSPEclipseUtils {
 			this.value = value;
 		}
 	}
-
 	/**
 	 * Very empirical and unsafe heuristic to turn unknown command arguments
 	 * into a workspace edit...
@@ -768,7 +729,6 @@ public class LSPEclipseUtils {
 		}
 		return res;
 	}
-
 	@Nullable public static IFile getFile(IDocument document) {
 		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
 		if (buffer == null) {
@@ -781,7 +741,6 @@ public class LSPEclipseUtils {
 			return null;
 		}
 	}
-
 	@NonNull
 	public static WorkspaceFolder toWorkspaceFolder(@NonNull IProject project) {
 		WorkspaceFolder folder = new WorkspaceFolder();
@@ -789,7 +748,6 @@ public class LSPEclipseUtils {
 		folder.setName(project.getName());
 		return folder;
 	}
-
 	@NonNull
 	public static List<IContentType> getFileContentTypes(@NonNull IFile file) {
 		List<IContentType> contentTypes = new ArrayList<>();
@@ -802,7 +760,6 @@ public class LSPEclipseUtils {
 		}
 		return contentTypes;
 	}
-
 	@NonNull
 	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
 		List<IContentType> contentTypes = new ArrayList<>();
@@ -819,7 +776,6 @@ public class LSPEclipseUtils {
 		}
 		return contentTypes;
 	}
-
 	/**
 	 * Deprecated because any code that calls this probably needs to be changed
 	 * somehow to be properly aware of markdown content. This method simply returns
@@ -839,7 +795,6 @@ public class LSPEclipseUtils {
 		}
 		return null;
 	}
-
 	public static String getHtmlDocString(Either<String, MarkupContent> documentation) {
 		if (documentation.isLeft()) {
 			return htmlParagraph(documentation.getLeft());
@@ -863,7 +818,6 @@ public class LSPEclipseUtils {
 		}
 		return null;
 	}
-
 	private static String htmlParagraph(String text) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("<p>"); //$NON-NLS-1$
@@ -871,7 +825,6 @@ public class LSPEclipseUtils {
 		sb.append("</p>"); //$NON-NLS-1$
 		return sb.toString();
 	}
-
 	/**
 	 * Convert the given Eclipse <code>rgb</code> instance to a LSP {@link Color}
 	 * instance.
@@ -884,7 +837,6 @@ public class LSPEclipseUtils {
 	public static Color toColor(RGB rgb) {
 		return new Color(rgb.red / 255d, rgb.green / 255d, rgb.blue / 255d, 1);
 	}
-
 	/**
 	 * Convert the given LSP <code>color</code> instance to a Eclipse {@link RGBA}
 	 * instance.
@@ -898,7 +850,6 @@ public class LSPEclipseUtils {
 		return new RGBA((int) (color.getRed() * 255), (int) (color.getGreen() * 255), (int) (color.getBlue() * 255),
 				(int) color.getAlpha());
 	}
-
 	public static Set<IEditorReference> findOpenEditorsFor(URI uri) {
 		if (uri == null) {
 			return Collections.emptySet();
@@ -918,7 +869,6 @@ public class LSPEclipseUtils {
 			})
 			.collect(Collectors.toSet());
 	}
-
 	private static URI toUri(IEditorInput editorInput) {
 		if (editorInput instanceof FileEditorInput) {
 			return LSPEclipseUtils.toUri(((FileEditorInput) editorInput).getFile());
@@ -928,9 +878,7 @@ public class LSPEclipseUtils {
 		}
 		return null;
 	}
-
 	public static URI toUri(String uri) {
 		return LSPEclipseUtils.toUri(Path.fromPortableString(URI.create(uri).getPath()));
 	}
-
 }

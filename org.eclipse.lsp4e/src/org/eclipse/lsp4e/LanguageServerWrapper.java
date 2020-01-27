@@ -93,6 +93,7 @@ import org.eclipse.lsp4j.SynchronizationCapabilities;
 import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
+import org.eclipse.lsp4j.TypeDefinitionCapabilities;
 import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditCapabilities;
@@ -199,7 +200,10 @@ public class LanguageServerWrapper {
 						consumer.consume(message);
 						logMessage(message);
 						URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
-						this.lspStreamProvider.handleMessage(message, this.languageServer, root);
+						final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
+						if (currentConnectionProvider != null && isActive()) {
+							currentConnectionProvider.handleMessage(message, this.languageServer, root);
+						}
 					}));
 			this.languageServer = launcher.getRemoteProxy();
 			client.connect(languageServer, this);
@@ -236,6 +240,9 @@ public class LanguageServerWrapper {
 			DefinitionCapabilities definitionCapabilities = new DefinitionCapabilities();
 			definitionCapabilities.setLinkSupport(Boolean.TRUE);
 			textDocumentClientCapabilities.setDefinition(definitionCapabilities);
+			TypeDefinitionCapabilities typeDefinitionCapabilities = new TypeDefinitionCapabilities();
+			typeDefinitionCapabilities.setLinkSupport(Boolean.TRUE);
+			textDocumentClientCapabilities.setTypeDefinition(typeDefinitionCapabilities);
 			textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
 			textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
 			DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities();

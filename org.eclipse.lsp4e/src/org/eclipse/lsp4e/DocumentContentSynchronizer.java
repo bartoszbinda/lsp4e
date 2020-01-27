@@ -143,9 +143,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didSave(params));
 	}
 	public void documentClosed() {
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
-		DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
+		// When LS is shut down all documents are being disconnected. No need to send "didClose" message to the LS that is being shut down or not yet started
+		if (languageServerWrapper.isActive()) {
+			TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
+			DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
+			languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
+		}
 	}
 	/**
 	 * Returns the text document sync kind capabilities of the server and {@link TextDocumentSyncKind#Full} otherwise.
