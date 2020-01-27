@@ -10,11 +10,9 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
-
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -49,34 +47,25 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonLabelProvider;
-
 public class SymbolsLabelProvider extends LabelProvider
 		implements ICommonLabelProvider, IStyledLabelProvider, IPreferenceChangeListener {
-
 	private Map<Image, Image[]> overlays = new HashMap<>();
-
 	private boolean showLocation;
-
 	private boolean showKind;
-
 	public SymbolsLabelProvider() {
 		this(false, InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
 				.getBoolean(CNFOutlinePage.SHOW_KIND_PREFERENCE, false));
 	}
-
 	public SymbolsLabelProvider(boolean showLocation, boolean showKind) {
 		this.showLocation = showLocation;
 		this.showKind = showKind;
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).addPreferenceChangeListener(this);
-
 	}
-
 	@Override
 	public void dispose() {
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).removePreferenceChangeListener(this);
 		super.dispose();
 	}
-
 	@Override
 	public Image getImage(Object element) {
 		if (element == null){
@@ -127,7 +116,6 @@ public class SymbolsLabelProvider extends LabelProvider
 		}
 		return res;
 	}
-
 	protected int getMaxSeverity(IResource resource, Range range)
 			throws CoreException, BadLocationException {
 		IDocument doc = LSPEclipseUtils.getDocument(resource);
@@ -142,7 +130,6 @@ public class SymbolsLabelProvider extends LabelProvider
 		}
 		return maxSeverity;
 	}
-
 	private Image getOverlay(Image res, int maxSeverity) {
 		if (maxSeverity != 1 && maxSeverity != 2) {
 			throw new IllegalArgumentException("Severity " + maxSeverity + " not supported."); //$NON-NLS-1$ //$NON-NLS-2$
@@ -164,15 +151,12 @@ public class SymbolsLabelProvider extends LabelProvider
 		}
 		return currentOverlays[maxSeverity - 1];
 	}
-
 	@Override
 	public String getText(Object element) {
 		return getStyledText(element).getString();
 	}
-
 	@Override
 	public StyledString getStyledText(Object element) {
-
 		if (element == LSSymbolsContentProvider.COMPUTING) {
 			return new StyledString(Messages.outline_computingSymbols);
 		}
@@ -219,31 +203,25 @@ public class SymbolsLabelProvider extends LabelProvider
 			res.append(" :", null); //$NON-NLS-1$
 			res.append(kind.toString(), StyledString.DECORATIONS_STYLER);
 		}
-
 		if (showLocation && location != null) {
 			res.append(' ');
 			res.append(location.getPath(), StyledString.QUALIFIER_STYLER);
 		}
 		return res;
 	}
-
 	@Override
 	public void restoreState(IMemento aMemento) {
 	}
-
 	@Override
 	public void saveState(IMemento aMemento) {
 	}
-
 	@Override
 	public String getDescription(Object anElement) {
 		return null;
 	}
-
 	@Override
 	public void init(ICommonContentExtensionSite aConfig) {
 	}
-
 	@Override
 	public void preferenceChange(PreferenceChangeEvent event) {
 		if (event.getKey().equals(CNFOutlinePage.SHOW_KIND_PREFERENCE)) {
@@ -255,5 +233,4 @@ public class SymbolsLabelProvider extends LabelProvider
 			}
 		}
 	}
-
 }

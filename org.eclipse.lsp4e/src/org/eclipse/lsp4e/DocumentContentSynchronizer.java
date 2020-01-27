@@ -11,12 +11,10 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.)
  *******************************************************************************/
 package org.eclipse.lsp4e;
-
 import java.io.File;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
@@ -34,18 +32,14 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
-
 final class DocumentContentSynchronizer implements IDocumentListener {
-
 	private final @NonNull LanguageServerWrapper languageServerWrapper;
 	private final @NonNull IDocument document;
 	private final @NonNull URI fileUri;
 	private final TextDocumentSyncKind syncKind;
-
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
-
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull IDocument document,
 			TextDocumentSyncKind syncKind) {
@@ -53,44 +47,35 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		this.fileUri = LSPEclipseUtils.toUri(document);
 		this.modificationStamp = new File(fileUri).lastModified();
 		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
-
 		this.document = document;
 		// add a document buffer
 		TextDocumentItem textDocument = new TextDocumentItem();
 		textDocument.setUri(fileUri.toString());
 		textDocument.setText(document.get());
-
 		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
-
 		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
-
 		if (languageId == null) {
 			languageId = Path.fromPortableString(this.fileUri.getPath()).getFileExtension();
 		}
-
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
 		languageServerWrapper.getInitializedServer()
 				.thenAcceptAsync(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
 	}
-
 	@Override
 	public void documentChanged(DocumentEvent event) {
 		checkEvent(event);
 		if (syncKind == TextDocumentSyncKind.Full) {
 			createChangeEvent(event);
 		}
-
 		if (changeParams != null) {
 			final DidChangeTextDocumentParams changeParamsToSend = changeParams;
 			changeParams = null;
-
 			changeParamsToSend.getTextDocument().setVersion(++version);
 			languageServerWrapper.getInitializedServer()
 					.thenAcceptAsync(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
 		}
 	}
-
 	@Override
 	public void documentAboutToBeChanged(DocumentEvent event) {
 		checkEvent(event);
@@ -100,7 +85,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			createChangeEvent(event);
 		}
 	}
-
 	/**
 	 * Convert Eclipse {@link DocumentEvent} to LS according {@link TextDocumentSyncKind}.
 	 * {@link TextDocumentContentChangeEventImpl}.
@@ -112,7 +96,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private boolean createChangeEvent(DocumentEvent event) {
 		changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), Collections.singletonList(new TextDocumentContentChangeEvent()));
 		changeParams.getTextDocument().setUri(fileUri.toString());
-
 		IDocument document = event.getDocument();
 		TextDocumentContentChangeEvent changeEvent = null;
 		TextDocumentSyncKind syncKind = getTextDocumentSyncKind();
@@ -143,20 +126,17 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 		return true;
 	}
-
 	public void documentSaved(long timestamp) {
 		this.modificationStamp = timestamp;
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
 		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didSave(params));
 	}
-
 	public void documentClosed() {
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
 		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
 	}
-
 	/**
 	 * Returns the text document sync kind capabilities of the server and {@link TextDocumentSyncKind#Full} otherwise.
 	 *
@@ -165,19 +145,15 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private TextDocumentSyncKind getTextDocumentSyncKind() {
 		return syncKind;
 	}
-
 	protected long getModificationStamp() {
 		return modificationStamp;
 	}
-
 	public IDocument getDocument() {
 		return this.document;
 	}
-
 	int getVersion() {
 		return version;
 	}
-
 	private void checkEvent(DocumentEvent event) {
 		if (this.document != event.getDocument()) {
 			throw new IllegalStateException("Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
