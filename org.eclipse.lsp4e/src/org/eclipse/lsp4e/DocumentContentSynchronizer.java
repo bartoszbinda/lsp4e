@@ -27,11 +27,14 @@ import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 final class DocumentContentSynchronizer implements IDocumentListener {
 	private final @NonNull LanguageServerWrapper languageServerWrapper;
 	private final @NonNull IDocument document;
@@ -128,6 +131,13 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	}
 	public void documentSaved(long timestamp) {
 		this.modificationStamp = timestamp;
+		ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+		if(serverCapabilities != null ) {
+			Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities.getTextDocumentSync();
+			if(textDocumentSync.isRight() && textDocumentSync.getRight().getSave() == null) {
+				return;
+			}
+		}
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
 		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didSave(params));
