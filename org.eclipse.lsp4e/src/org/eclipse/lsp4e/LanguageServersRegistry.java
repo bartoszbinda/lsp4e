@@ -91,23 +91,19 @@ public class LanguageServersRegistry {
 	}
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
 		private IConfigurationElement extension;
-		private StreamConnectionProvider provider;
 		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
 			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), Boolean.parseBoolean(element.getAttribute(SINGLETON_ATTRIBUTE)));
 			this.extension = element;
 		}
 		@Override
 		public StreamConnectionProvider createConnectionProvider() {
-			if (provider == null) {
-				try {
-					provider = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
-				} catch (CoreException e) {
-					StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
-					throw new RuntimeException(
-							"Exception occurred while creating an instance of the stream connection provider", e); //$NON-NLS-1$
-				}
+			try {
+				return (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
+			} catch (CoreException e) {
+				StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
+				throw new RuntimeException(
+						"Exception occurred while creating an instance of the stream connection provider", e); //$NON-NLS-1$
 			}
-			return provider;
 		}
 		@Override
 		public LanguageClientImpl createLanguageClient() {

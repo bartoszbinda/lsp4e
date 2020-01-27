@@ -10,7 +10,6 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,34 +20,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+import java.util.function.Function;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-
 public class SymbolsModel {
-
 	private static final SymbolInformation ROOT_SYMBOL_INFORMATION = new SymbolInformation();
 	private static final Object[] EMPTY = new Object[0];
-
 	private Map<SymbolInformation, List<SymbolInformation>> childrenMap = new HashMap<>();
 	private List<DocumentSymbol> rootSymbols = new ArrayList<>();
 	private Map<DocumentSymbol, DocumentSymbol> parent = new HashMap<>();
 	private IFile file;
-
 	public static class DocumentSymbolWithFile {
 		public final DocumentSymbol symbol;
-		public final IFile file;
-
-		public DocumentSymbolWithFile(DocumentSymbol symbol, IFile file) {
+		public final @NonNull IFile file;
+		public DocumentSymbolWithFile(DocumentSymbol symbol, @NonNull IFile file) {
 			this.symbol = symbol;
 			this.file = file;
 		}
 	}
-
 	public boolean update(List<Either<SymbolInformation, DocumentSymbol>> response) {
 		// TODO update model only on real change
 		childrenMap.clear();
@@ -61,7 +55,6 @@ public class SymbolsModel {
 					// strange need to cast here, could be a JDT compiler issue
 					Comparator.comparingInt(pos -> ((Position) pos).getLine())
 							.thenComparingInt(pos -> ((Position) pos).getCharacter())));
-
 			Deque<SymbolInformation> parentStack = new ArrayDeque<>();
 			parentStack.push(ROOT_SYMBOL_INFORMATION);
 			SymbolInformation previousSymbol = null;
@@ -88,7 +81,6 @@ public class SymbolsModel {
 		}
 		return true;
 	}
-
 	private boolean isIncluded(SymbolInformation parent, SymbolInformation symbol) {
 		if (parent == null || symbol == null) {
 			return false;
@@ -98,31 +90,30 @@ public class SymbolsModel {
 		}
 		return isIncluded(parent.getLocation(), symbol.getLocation());
 	}
-
 	private boolean isIncluded(Location reference, Location included) {
 		return reference.getUri().equals(included.getUri())
 				&& !reference.equals(included)
 				&& isAfter(reference.getRange().getStart(), included.getRange().getStart())
 				&& isAfter(included.getRange().getEnd(), reference.getRange().getEnd());
 	}
-
 	private boolean isAfter(Position reference, Position included) {
 		return included.getLine() > reference.getLine()
 				|| (included.getLine() == reference.getLine() && included.getCharacter() >= reference.getCharacter());
 	}
-
 	private void addChild(SymbolInformation parent, SymbolInformation child) {
 		List<SymbolInformation> children = childrenMap.computeIfAbsent(parent, key -> new ArrayList<>());
 		children.add(child);
 	}
-
 	public Object[] getElements() {
 		List<Object> res = new ArrayList<>();
 		res.addAll(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
-		rootSymbols.stream().map(symbol -> new DocumentSymbolWithFile(symbol, this.file)).forEach(res::add);
+		final IFile current = this.file;
+		Function<DocumentSymbol, Object> mapper = current != null ?
+				symbol -> new DocumentSymbolWithFile(symbol, current) :
+				symbol -> symbol;
+		rootSymbols.stream().map(mapper).forEach(res::add);
 		return res.toArray(new Object[res.size()]);
 	}
-
 	public Object[] getChildren(Object parentElement) {
 		if (parentElement != null) {
 			if (parentElement instanceof SymbolInformation) {
@@ -141,7 +132,6 @@ public class SymbolsModel {
 		}
 		return EMPTY;
 	}
-
 	public Object getParent(Object element) {
 		if (element instanceof SymbolInformation) {
 			Optional<SymbolInformation> result = childrenMap.keySet().stream().filter(parent -> {
@@ -154,9 +144,7 @@ public class SymbolsModel {
 		}
 		return null;
 	}
-
 	public void setFile(IFile file) {
 		this.file = file;
 	}
-
 }

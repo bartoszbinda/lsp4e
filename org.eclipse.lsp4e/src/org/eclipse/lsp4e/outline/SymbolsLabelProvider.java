@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.outline;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -192,7 +193,10 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof DocumentSymbolWithFile) {
 			name = ((DocumentSymbolWithFile) element).symbol.getName();
 			kind = ((DocumentSymbolWithFile) element).symbol.getKind();
-			location = ((DocumentSymbolWithFile) element).file.getLocationURI();
+			IFile file = ((DocumentSymbolWithFile) element).file;
+			if (file != null) {
+				location = file.getLocationURI();
+			}
 		}
 		if (name != null) {
 			res.append(name, null);

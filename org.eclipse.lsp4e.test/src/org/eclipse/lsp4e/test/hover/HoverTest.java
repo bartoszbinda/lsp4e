@@ -10,12 +10,10 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *******************************************************************************/
 package org.eclipse.lsp4e.test.hover;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -23,7 +21,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -32,7 +29,7 @@ import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
-import org.eclipse.lsp4e.operations.hover.LSBasedHover;
+import org.eclipse.lsp4e.operations.hover.LSPTextHover;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -53,38 +50,31 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 @SuppressWarnings("restriction")
 public class HoverTest {
-
 	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
-	private LSBasedHover hover;
+	private LSPTextHover hover;
 	
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("HoverTest" + System.currentTimeMillis());
-		hover = new LSBasedHover();
+		hover = new LSPTextHover();
 	}
-
 	@Test
 	public void testHoverRegion() throws CoreException, InvocationTargetException {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
-
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-
 		assertEquals(new Region(0, 10), hover.getHoverRegion(viewer, 5));
 	}
 	
 	@Test
 	public void testHoverRegionInvalidOffset() throws CoreException, InvocationTargetException {
 		MockLanguageServer.INSTANCE.setHover(null);
-
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-
 		assertEquals(new Region(15, 0), hover.getHoverRegion(viewer, 15));
 	}
 	
@@ -92,10 +82,8 @@ public class HoverTest {
 	public void testHoverInfo() throws CoreException, InvocationTargetException {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
-
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-
 		// TODO update test when MARKDOWN to HTML will be finished
 		assertTrue(hover.getHoverInfo(viewer, new Region(0, 10)).contains("HoverContent"));
 	}
@@ -104,20 +92,16 @@ public class HoverTest {
 	public void testHoverInfoEmptyContentList() throws CoreException, InvocationTargetException {
 		Hover hoverResponse = new Hover(Collections.emptyList(), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
-
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-
 		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
 	}
 	
 	@Test
 	public void testHoverInfoInvalidOffset() throws CoreException, InvocationTargetException {
 		MockLanguageServer.INSTANCE.setHover(null);
-
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-
 		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
 	}
 	
@@ -125,20 +109,16 @@ public class HoverTest {
 	public void testHoverEmptyContentItem() throws CoreException, InvocationTargetException {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
-
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-
 		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
 	}
-
 	@Test
 	public void testHoverOnExternalFile()
 			throws CoreException, InvocationTargetException, IOException, InterruptedException {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("blah")),
 				new Range(new Position(0, 0), new Position(0, 0)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
-
 		File file = File.createTempFile("testHoverOnExternalfile", ".lspt");
 		try {
 			ITextViewer viewer = TestUtils.getTextViewer(IDE.openInternalEditorOnFileStore(
@@ -148,15 +128,12 @@ public class HoverTest {
 			Files.deleteIfExists(file.toPath());
 		}
 	}
-
 	@Test
 	public void testMultipleHovers() throws Exception {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
-
 		IFile file = TestUtils.createUniqueTestFileMultiLS(project, "HoverRange Other Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-
 		// TODO update test when MARKDOWN to HTML will be finished
 		String hoverInfo = hover.getHoverInfo(viewer, new Region(0, 10));
 		int index = hoverInfo.indexOf("HoverContent");
@@ -165,7 +142,6 @@ public class HoverTest {
 		index = hoverInfo.indexOf("HoverContent", index);
 		assertNotEquals("Hover content found only once", -1, index);
 	}
-
 	@Test
 	public void testIntroUrlLink() throws Exception {
 		Hover hoverResponse = new Hover(
@@ -173,14 +149,10 @@ public class HoverTest {
 						"[My intro URL link](http://org.eclipse.ui.intro/execute?command=org.eclipse.ui.file.close)")),
 				new Range(new Position(0, 0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
-
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-
 		String hoverContent = hover.getHoverInfo(viewer, new Region(0, 10));
-
-		LSBasedHover hoverManager = new LSBasedHover();
-
+		LSPTextHover hoverManager = new LSPTextHover();
 		Display display = PlatformUI.getWorkbench().getDisplay();
 		final Shell shell = new Shell(display);
 		BrowserInformationControl wrapperControl = null, control = null;
@@ -190,19 +162,15 @@ public class HoverTest {
 			shell.setLayout(layout);
 			shell.setSize(320, 200);
 			shell.open();
-
 			wrapperControl = (BrowserInformationControl) hoverManager.getHoverControlCreator()
 					.createInformationControl(shell);
 			control = (BrowserInformationControl) wrapperControl
 					.getInformationPresenterControlCreator().createInformationControl(shell);
 			Field f = BrowserInformationControl.class.getDeclaredField("fBrowser"); //
 			f.setAccessible(true);
-
 			Browser browser = (Browser) f.get(control);
 			browser.setJavascriptEnabled(true);
-
 			AtomicBoolean completed = new AtomicBoolean(false);
-
 			browser.addProgressListener(new ProgressAdapter() {
 				@Override
 				public void completed(ProgressEvent event) {
@@ -211,11 +179,8 @@ public class HoverTest {
 					completed.set(true);
 				}
 			});
-
 			assertNotNull("Editor should be opened", viewer.getTextWidget());
-
 			browser.setText(hoverContent);
-
 			assertTrue("action didn't close editor", new DisplayHelper() {
 				@Override
 				protected boolean condition() {
@@ -232,5 +197,4 @@ public class HoverTest {
 			shell.dispose();
 		}
 	}
-
 }
